@@ -1,6 +1,7 @@
 import createrepo_c
 import re
 
+
 class Parser:
     packages = {}
     packages_graph = {}
@@ -11,14 +12,14 @@ class Parser:
         if not cls.packages:
             cls.parse_packages()
 
-        dependecies = {}
-        provides = []
+        libs_parents = {} #библиотека: [зависимый_пакет, родительский_пакет]
+        libs_childrens = {} #библиотека: пакет
 
         #Только для нового пакета, при вводе в поиск
         # if pkg_name != cls.current_package:
         #     cls.current_package = pkg_name
-        #     dependecies = {}
-        #     provides = {}
+        #     libs_parents = {}
+        #     libs_childrens = {}
         #     cls.packages_graph = {}
             #При переходе на недалекую вершину не удалять всё, а только ставшие ненужными вершины
         
@@ -31,84 +32,52 @@ class Parser:
             pkg_requires = pkg[0]
             for lib in pkg_requires:
                 lib_name = lib[0]
-                if lib_name not in dependecies.keys():
-                    dependecies[lib_name] = [pkg_name, '']
+                if lib_name not in libs_parents.keys():
+                    libs_parents[lib_name] = []
 
             #библиотеки, предоставляемые пакетом
             pkg_provides = pkg[1]
             for lib in pkg_provides:
                 lib_name = lib[0]
-                if lib_name not in provides.keys():
-                    provides[lib_name] = pkg_name
+                if lib_name not in libs_childrens.keys():
+                    libs_childrens[lib_name] = []
         else:
             return cls.packages_graph
+        
 
-        print('\nЗависимости')
-        for key in dependecies.keys():
-            print(f'{key}: {dependecies[key]}')
+        print('\nParents')
+        for key in libs_parents.keys():
+            print(f'{key}: {libs_parents[key]}')
 
-        print('\nProvides')
-        for key in provides.keys():
-            print(f'{key}: {provides[key]}')
+        # print('\nChildrens')
+        # for key in libs_childrens.keys():
+        #     print(f'{key}: {libs_childrens[key]}')
 
-        #Добавить обработку библиотек с пробелом в названии
+
+        # Добавить обработку библиотек с пробелом в названии
         # for package_name in cls.packages.keys():
         #     for lib in cls.packages[package_name][0]:
         #         lib_name = lib[0]
         #         if ' ' in lib_name:
-        #             print('Нашли необычную библиотеку:')
+        #             # print('Нашли необычную библиотеку:')
         #             print(lib_name, package_name)
 
-
         #Поиск зависимостей ВВЕРХ
-        libs = list(dependecies.keys())
-        potential_pkgs = cls.make_potenial_packages(dependecies)
-
-        i = 0 #индекс для одновременного прохода по списку библиотек и потенциальных пакетов
-        while i < len(libs):
-            package_name = potential_pkgs[i]
-            lib_name = libs[i]
-            if (package_name in cls.packages.keys()): #Проверяем есть ли такой пакет в нашем списки пакетов
-                provided_libs = list(zip(*cls.packages[package_name][1]))
-                if provided_libs and (lib_name in provided_libs[0]):
-                    dependecies[lib_name][1] = package_name
-                    cls.packages_graph[package_name] = [dependecies[lib_name][0]]
-                    libs.remove(lib_name)
-                    potential_pkgs.remove(package_name)
-                else:
-                    i += 1
-            else:
-                i += 1
-
-        for package_name in cls.packages.keys(): 
-            for lib in cls.packages[package_name][1]: #по provides
-                lib_name = lib[0]
-                if lib_name in libs:
-                    depended_package_name = dependecies[lib_name][0]
-                    if (package_name in cls.packages_graph # существует зависимость от пакета
-                        and depended_package_name not in cls.packages_graph[provides[lib_name]]): # значения ещё нет в списке зависимых
-                        cls.packages_graph[package_name].append(depended_package_name)
-                    else:
-                        cls.packages_graph[package_name] = [depended_package_name]        
+        libs_parents = cls.find_parents_packages(libs_parents, pkg_name)
 
         #Поиск зависимостей ВНИЗ
-        for package_name in cls.packages.keys(): 
-            for lib in cls.packages[package_name][0]: #по requires
-                lib_name = lib[0]
-                if lib_name in provides.keys():
-                    parent_package_name = provides[lib_name]
-                    if (parent_package_name in cls.packages_graph # существует зависимость от пакета
-                        and package_name not in cls.packages_graph[parent_package_name]): # значения ещё нет в списке зависимых
-                        cls.packages_graph[parent_package_name].append(package_name)
-                    else:
-                        cls.packages_graph[parent_package_name] = [package_name]
+        libs_childrens = cls.find_children_packages(libs_childrens, pkg_name)
 
-        #Сделать поиск вниз и вверх функциями
-        #Для родительских пакетов вызвать поиск вверх
-        #Для дочерних поиск вниз
+        # print('\nParents')
+        # for key in libs_parents.keys():
+        #     print(f'{key}: {libs_parents[key]}')
 
-        print('\n\n\n')
-        print(cls.packages_graph)
+        # print('\nChildrens')
+        # for key in libs_childrens.keys():
+        #     print(f'{key}: {libs_childrens[key]}')
+
+        print('\n\n')
+        # print(cls.packages_graph)
         
         return cls.packages_graph
 
@@ -134,6 +103,54 @@ class Parser:
             cls.packages[pkg.name] = pkg_info
 
         del repodata
+
+    @classmethod
+    def find_parents_packages(cls, libs_parents, dependent_package):
+        libs = list(libs_parents.keys())
+        potential_pkgs = cls.make_potenial_packages(libs_parents)
+
+        i = 0 #индекс для одновременного прохода по списку библиотек и потенциальных пакетов
+        while i < len(libs):
+            package_name = potential_pkgs[i]
+            lib_name = libs[i]
+            if (package_name in cls.packages.keys()): #Проверяем есть ли такой пакет в нашем списки пакетов
+                provided_libs = list(zip(*cls.packages[package_name][1]))
+                if provided_libs and (lib_name in provided_libs[0]):
+                    libs_parents[lib_name].append(package_name)
+                    cls.packages_graph[package_name] = [dependent_package]
+                    libs.remove(lib_name)
+                    potential_pkgs.remove(package_name)
+                else:
+                    i += 1
+            else:
+                i += 1
+
+        for package_name in cls.packages.keys(): 
+            for lib in cls.packages[package_name][1]: #по libs_childrens
+                lib_name = lib[0]
+                if lib_name in libs:
+                    libs_parents[lib_name].append(package_name)
+                    if (package_name in cls.packages_graph # существует зависимость от пакета
+                        and dependent_package not in cls.packages_graph[package_name]): # значения ещё нет в списке зависимых
+                        cls.packages_graph[package_name].append(dependent_package)
+                    else:
+                        cls.packages_graph[package_name] = [dependent_package]
+        return libs_parents
+    
+    @classmethod
+    def find_children_packages(cls, libs_childrens, parent_package):
+        for package_name in cls.packages.keys(): 
+            for lib in cls.packages[package_name][0]: #по requires
+                lib_name = lib[0]
+                if lib_name in libs_childrens.keys():
+                    libs_childrens[lib_name].append(package_name)
+                    if (parent_package in cls.packages_graph # существует зависимость от пакета
+                        and package_name not in cls.packages_graph[parent_package]): # значения ещё нет в списке зависимых
+                        cls.packages_graph[parent_package].append(package_name)
+                    else:
+                        cls.packages_graph[parent_package] = [package_name]
+        
+        return libs_childrens
 
     #Ищем потенциальные названия пакетов исходя из названия библиотеки
     @staticmethod
