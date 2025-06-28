@@ -32,37 +32,60 @@ export default {
           return;
         }
 
+        const target = this.packageName;
         const nodes = [];
         const edges = [];
-        const nodesSet = new Set();
+        const visited = new Set();
+        const nodeLevels = new Map(); // id → level
+        let maxDownLevel = 0;
+        let minUpLevel = 0;
 
-        const target = this.packageName;
-        const reverseDeps = []; // кто зависит от искомого пакета
-        const directDeps = data[target] || [];
+        const addNode = (id, level, overrideColor = null) => {
+          let color = overrideColor;
 
-        // Добавляем центр
-        nodes.push({ id: target, label: target, color: "#ff9900", level: 1 });
-        nodesSet.add(target);
-
-        // Прямые зависимости (target → child)
-        directDeps.forEach((child) => {
-          if (!nodesSet.has(child)) {
-            nodes.push({ id: child, label: child, level: 2 });
-            nodesSet.add(child);
+          if (id.startsWith("SET")) {
+            color = "#ffff66"; // жёлтый для множеств
           }
-          edges.push({ from: target, to: child });
-        });
 
-        // Обратные зависимости (parent → target)
-        for (const [pkg, deps] of Object.entries(data)) {
-          if (deps.includes(target)) {
-            if (!nodesSet.has(pkg)) {
-              nodes.push({ id: pkg, label: pkg, level: 0 });
-              nodesSet.add(pkg);
+          if (!nodeLevels.has(id)) {
+            nodeLevels.set(id, level);
+            nodes.push({ id, label: id, level, ...(color && { color }) });
+          } else {
+            if (level < nodeLevels.get(id)) {
+              nodeLevels.set(id, level);
+              const node = nodes.find(n => n.id === id);
+              if (node) {
+                node.level = level;
+                if (color) node.color = color;
+              }
             }
-            edges.push({ from: pkg, to: target });
           }
-        }
+        };
+
+        const visitDown = (pkg, level) => {
+          maxDownLevel = Math.max(maxDownLevel, level);
+          addNode(pkg, level);
+          const children = data[pkg] || [];
+          children.forEach((child) => {
+            edges.push({ from: pkg, to: child });
+            visitDown(child, level + 1);
+          });
+        };
+
+        const visitUp = (pkg, level) => {
+          minUpLevel = Math.min(minUpLevel, level);
+          addNode(pkg, level);
+          for (const [parent, deps] of Object.entries(data)) {
+            if (deps.includes(pkg)) {
+              edges.push({ from: parent, to: pkg });
+              visitUp(parent, level - 1);
+            }
+          }
+        };
+
+        addNode(target, 0, "#ff9900");
+        visitDown(target, 1);
+        visitUp(target, -1);
 
         const container = document.getElementById("network");
         const visData = { nodes, edges };
