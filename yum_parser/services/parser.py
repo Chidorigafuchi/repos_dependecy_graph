@@ -1,9 +1,8 @@
 import createrepo_c
 
 
-def parse_packages():
+def parse_packages(repos):
     packages = {}
-    repos = ['os'] # , 'updates', 'debuginfo', 'kernel-rt', 'kernel-testing'
 
     for repo in repos:
         repo_url = 'https://repo1.red-soft.ru/redos/8.0/x86_64/' + repo + '/'

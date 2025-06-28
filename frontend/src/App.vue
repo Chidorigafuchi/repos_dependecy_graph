@@ -1,11 +1,26 @@
 <template>
   <div class="app">
+    <div style="margin-bottom: 10px; max-width: 300px;">
+      <label class="label">Выберите репозитории:</label>
+      <multiselect
+        v-model="selectedRepos"
+        :options="repositories"
+        :multiple="true"
+        :close-on-select="false"
+        :clear-on-select="false"
+        :preserve-search="true"
+        placeholder="Выберите один или несколько..."
+        class="multiselect"
+      />
+    </div>
+
     <input
       v-model="packageName"
       placeholder="Введите имя пакета"
       @keyup.enter="fetchGraph"
     />
     <button @click="fetchGraph">Показать граф</button>
+
     <div
       ref="networkContainer"
       style="height: 700px; border: 1px solid #ccc; margin-top: 20px;"
@@ -16,21 +31,29 @@
 <script>
 import axios from "axios";
 import { Network } from "vis-network";
+import Multiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
+  components: {
+    Multiselect,
+  },
   data() {
     return {
       packageName: "",
+      selectedRepos: [],
+      repositories: ["os", "updates", "debuginfo", "kernel-rt", "kernel-testing"],
       network: null,
     };
   },
   methods: {
     async fetchGraph() {
-      if (!this.packageName) return;
+      if (!this.packageName || this.selectedRepos.length === 0) return;
 
       try {
         const response = await axios.post("http://localhost:8000/api/package/", {
           name: this.packageName,
+          repos: this.selectedRepos,
         });
 
         const data = response.data;
@@ -167,15 +190,23 @@ export default {
   padding: 20px;
   font-family: Arial, sans-serif;
 }
+
 input {
   padding: 6px 10px;
   font-size: 16px;
   width: 300px;
   margin-right: 10px;
 }
+
 button {
   padding: 6px 12px;
   font-size: 16px;
   cursor: pointer;
+}
+
+.label {
+  font-weight: bold;
+  margin-bottom: 4px;
+  display: block;
 }
 </style>

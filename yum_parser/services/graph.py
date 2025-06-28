@@ -7,18 +7,19 @@ class Graph:
     saved_packages_graph = {}
 
     @classmethod
-    def get_package_graph(cls, pkg_name):
-        parent_packages = []
-        children_packages = []
-
+    def get_package_graph(cls, pkg_name, repos):
         if not cls.packages:
-            cls.packages = parse_packages()
+            cls.packages = parse_packages(repos)
+            if not cls.packages:
+                return {}
 
         if (pkg_name not in cls.packages.keys()):
             return {}
                     
         if pkg_name != cls.current_package:
             cls.current_package = pkg_name
+            parent_packages = []
+            children_packages = []
             packages_graph = {
                 'package_to_package': {},
                 'set_to_package': {},
@@ -33,23 +34,23 @@ class Graph:
         children_packages, packages_graph = cls.get_package_neighbours(pkg_name, packages_graph, up=False)
 
         for package in parent_packages:
-            parent_packages, packages_graph = cls.get_package_neighbours(package, packages_graph, up=True)
+            _, packages_graph = cls.get_package_neighbours(package, packages_graph, up=True)
 
         for package in children_packages:
-            children_packages, packages_graph = cls.get_package_neighbours(package, packages_graph, up=False)
+            _, packages_graph = cls.get_package_neighbours(package, packages_graph, up=False)
 
         cls.saved_packages_graph = packages_graph
 
         return packages_graph
     
     @classmethod
-    def get_package_neighbours(cls, current_package, packages_graph, up): #Переименовать
+    def get_package_neighbours(cls, current_package, packages_graph, up):
         dependecies = []
         neighbours = []
-        pkg = cls.packages[current_package]
-        package_dependencies = pkg[0] if up else pkg[1]
+        package_info = cls.packages[current_package]
+        package_info_dependencies = package_info[0] if up else package_info[1]
         
-        for dependency in package_dependencies:
+        for dependency in package_info_dependencies:
             dependency_name = dependency[0]
             if dependency_name not in dependecies:
                 dependecies.append(dependency_name)
@@ -67,8 +68,8 @@ class Graph:
             dependecies_neighbours[dependecy_name] = []
         
         for package_name in cls.packages.keys(): 
-            package_dependencies = cls.packages[package_name][1] if up else cls.packages[package_name][0]
-            for dependecy in package_dependencies:
+            package_info_dependencies = cls.packages[package_name][1] if up else cls.packages[package_name][0]
+            for dependecy in package_info_dependencies:
                 dependecy_name = dependecy[0]
                 if dependecy_name in dependecies:
                     if package_name not in neighbours:
@@ -88,8 +89,6 @@ class Graph:
                         packages_graph['package_to_library'][current_package].append(dependency)
                     else:
                         packages_graph['package_to_library'][current_package] = [dependency]
-        
-
 
         return neighbours, packages_graph
 
