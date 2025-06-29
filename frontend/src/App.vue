@@ -38,6 +38,7 @@ export default {
   components: {
     Multiselect,
   },
+
   data() {
     return {
       packageName: "",
@@ -46,6 +47,7 @@ export default {
       network: null,
     };
   },
+  
   methods: {
     async fetchGraph() {
       if (!this.packageName || this.selectedRepos.length === 0) return;
@@ -57,10 +59,22 @@ export default {
         });
 
         const data = response.data;
+
+        const isEmpty =
+          Object.keys(data.package_package || {}).length === 0 &&
+          Object.keys(data.set_package || {}).length === 0 &&
+          Object.keys(data.library_package || {}).length === 0;
+
+        if (isEmpty) {
+          alert("Такого пакета нет или у него нет зависимостей.");
+          return;
+        }
+
         const { nodes, edges } = this.buildGraph(data, this.packageName);
 
         if (this.network) {
-          this.network.setData({ nodes: [], edges: [] });
+          this.network.destroy();
+          this.network = null;
         }
 
         const options = {
@@ -100,7 +114,7 @@ export default {
       const nodes = new Map();
       const edges = [];
       const visited = new Set();
-      const addedLibs = new Set(); // Чтобы не дублировать библиотечные узлы
+      const addedLibs = new Set();
 
       const addNode = (id, level, shape = "dot", color = null, label = null) => {
         if (!nodes.has(id)) {
@@ -118,13 +132,13 @@ export default {
       };
 
       const addLibrariesForPackage = (pkg, pkgLevel) => {
-        const libs = data.package_to_library?.[pkg] || [];
+        const libs = data.library_package?.[pkg] || [];
         if (libs.length === 0 || addedLibs.has(pkg)) return;
         addedLibs.add(pkg);
 
         const libNodeId = `libs_for_${pkg}`;
         addNode(libNodeId, pkgLevel - 1, "triangle", "#ccffff", "libraries");
-        nodes.get(libNodeId).label = "unkn libraries";
+        nodes.get(libNodeId).label = "unused";
         edges.push({ from: libNodeId, to: pkg });
       };
 
@@ -135,17 +149,19 @@ export default {
         if (visited.has(pkg)) return;
         visited.add(pkg);
 
-        const children = data.package_to_package?.[pkg] || [];
+        const children = data.package_package?.[pkg] || [];
         for (const child of children) {
           addNode(child, level + 1, "dot");
           edges.push({ from: pkg, to: child });
           walkDown(child, level + 1);
         }
 
-        for (const [setName, pkgs] of Object.entries(data.set_to_package || {})) {
-          if (pkgs.includes(pkg)) {
-            addNode(setName, level + 1, "box", "#ffff66");
-            edges.push({ from: pkg, to: setName });
+        for (const [packageKey, setList] of Object.entries(data.set_package || {})) {
+          if (packageKey === pkg) {
+            for (const setName of setList) {
+              addNode(setName, level + 1, "box", "#ccffcc");
+              edges.push({ from: pkg, to: setName });
+            }
           }
         }
       };
@@ -154,7 +170,7 @@ export default {
         addNode(pkg, level, "dot");
         addLibrariesForPackage(pkg, level);
 
-        const parents = Object.entries(data.package_to_package || {}).filter(
+        const parents = Object.entries(data.package_package || {}).filter(
           ([parent, children]) => children.includes(pkg)
         );
 
@@ -164,8 +180,8 @@ export default {
           walkUp(parent, level - 1);
         }
 
-        for (const [setName, pkgs] of Object.entries(data.set_to_package || {})) {
-          if (pkgs.includes(pkg)) {
+        for (const [setName, packages] of Object.entries(data.set_package || {})) {
+          if (packages.includes(pkg)) {
             addNode(setName, level - 1, "box", "#ffff66");
             edges.push({ from: setName, to: pkg });
           }
