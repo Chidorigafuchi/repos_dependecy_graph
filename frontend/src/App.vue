@@ -25,11 +25,32 @@
       ref="networkContainer"
       style="height: 700px; border: 1px solid #ccc; margin-top: 20px;"
     ></div>
+
+    <div v-if="selectedNodeId" class="modal-overlay" @click.self="closeModal">
+      <div class="modal">
+        <h3 v-if="selectedNodeType === 'set'">
+          Зависимости от <strong>{{ selectedNodeId.replace('SET_', '') }}</strong>:
+        </h3>
+        <h3 v-else-if="selectedNodeType === 'library'">
+          Ненайденные зависимости для <strong>{{ selectedNodeId.replace('libs_for_', '') }}</strong>:
+        </h3>
+
+        <input
+          v-model="filterText"
+          placeholder="Фильтр по названию..."
+          style="margin-bottom: 10px; width: 100%; padding: 6px;"
+        />
+
+        <ul>
+          <li v-for="item in filteredNodeItems" :key="item">{{ item }}</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import axios from 'axios';
 import { Network } from 'vis-network';
 import Multiselect from 'vue-multiselect';
@@ -38,8 +59,15 @@ import 'vue-multiselect/dist/vue-multiselect.min.css';
 const packageName = ref('');
 const selectedRepos = ref([]);
 const repositories = ["os", "updates", "debuginfo", "kernel-rt", "kernel-testing"];
+
 const network = ref(null);
 const networkContainer = ref(null);
+
+const graphData = ref({});
+const selectedNodeId = ref(null);
+const selectedNodeType = ref(null);
+const selectedNodeItems = ref([]);
+const filterText = ref('');
 
 const fetchGraph = async () => {
   if (!packageName.value || selectedRepos.value.length === 0) return;
@@ -51,6 +79,7 @@ const fetchGraph = async () => {
     });
 
     const data = response.data;
+    graphData.value = data;
 
     const isEmpty =
       Object.keys(data.package_package || {}).length === 0 &&
@@ -83,7 +112,13 @@ const fetchGraph = async () => {
       nodes: {
         shape: 'dot',
         size: 16,
-        font: { size: 16 },
+        font: {
+          size: 16,
+          multi: true,
+        },
+        widthConstraint: {
+          maximum: 110,
+        },
         borderWidth: 1,
       },
       edges: {
@@ -97,6 +132,7 @@ const fetchGraph = async () => {
     };
 
     network.value = new Network(networkContainer.value, { nodes, edges }, options);
+    network.value.on('click', handleNodeClick)
   } catch (error) {
     console.error('Ошибка при получении графа:', error);
   }
@@ -130,7 +166,7 @@ const buildGraph = (data, target) => {
 
     const libNodeId = `libs_for_${pkg}`;
     addNode(libNodeId, pkgLevel - 1, 'triangle', '#ccffff', 'libraries');
-    nodes.get(libNodeId).label = 'unused';
+    nodes.get(libNodeId).label = 'unresolved';
     edges.push({ from: libNodeId, to: pkg });
   };
 
@@ -189,6 +225,42 @@ const buildGraph = (data, target) => {
     edges,
   };
 };
+
+const handleNodeClick = (params) => {
+  const nodeId = params.nodes[0];
+  if (!nodeId) return;
+
+  if (nodeId in graphData.value.sets) {
+    selectedNodeId.value = nodeId;
+    selectedNodeType.value = 'set';
+    selectedNodeItems.value = graphData.value.sets[nodeId];
+    return;
+  }
+
+  if (nodeId.startsWith('libs_for_')) {
+    const pkg = nodeId.replace('libs_for_', '');
+    const libs = graphData.value.library_package?.[pkg] || [];
+
+    if (libs.length > 0) {
+      selectedNodeId.value = nodeId;
+      selectedNodeType.value = 'library';
+      selectedNodeItems.value = libs;
+    }
+  }
+};
+
+const closeModal = () => {
+  selectedNodeId.value = null;
+  selectedNodeType.value = null;
+  selectedNodeItems.value = [];
+  filterText.value = '';
+};
+
+const filteredNodeItems = computed(() => {
+  return selectedNodeItems.value.filter(item =>
+    item.toLowerCase().includes(filterText.value.toLowerCase())
+  );
+});
 </script>
 
 <style>
@@ -214,5 +286,32 @@ button {
   font-weight: bold;
   margin-bottom: 4px;
   display: block;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  min-width: 300px;
+}
+
+.modal h3 {
+  margin-top: 0;
 }
 </style>

@@ -56,8 +56,6 @@ class Graph:
 
         cls.saved_packages_graph = packages_graph
 
-        print(packages_graph['sets'])
-
         return packages_graph
     
     @classmethod
@@ -89,9 +87,9 @@ class Graph:
             for dependecy in package_info_dependencies:
                 dependecy_name = dependecy[0]
                 if dependecy_name in dependecies:
+                    dependecies_neighbours[dependecy_name].append(package_name)
                     if package_name not in neighbours:
                         neighbours.append(package_name)
-                        dependecies_neighbours[dependecy_name].append(package_name)
 
         for dependency in dependecies_neighbours.keys():
             packages = dependecies_neighbours[dependency]
