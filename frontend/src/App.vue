@@ -34,7 +34,7 @@ const fetchGraph = async () => {
 const onNodeClicked = ({ nodeId, nodeType, items }) => {
   selectedNodeId.value = nodeId;
   selectedNodeType.value = nodeType;
-  selectedNodeItems.value = items;
+  selectedNodeItems.value = items || []
 };
 
 const closeModal = () => {
@@ -63,7 +63,7 @@ const closeModal = () => {
     />
 
     <node-modal
-      v-if="selectedNodeId"
+      v-if="selectedNodeId && (selectedNodeType === 'set' || selectedNodeType === 'library')"
       :node-id="selectedNodeId"
       :node-type="selectedNodeType"
       :node-items="selectedNodeItems"

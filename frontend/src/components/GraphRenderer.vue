@@ -1,6 +1,7 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { Network } from 'vis-network';
+import PackagePopup from './PackagePopup.vue';
 
 const props = defineProps({
   graphData: Object,
@@ -11,10 +12,19 @@ const emit = defineEmits(['node-clicked']);
 const network = ref(null);
 const container = ref(null);
 
-watch(() => props.graphData, (newData) => {
-  if (!newData || Object.keys(newData).length === 0) return;
-  drawGraph(newData, props.packageName);
-}, { deep: true });
+const currentNodeId = ref(null);
+const popupVisible = ref(false);
+const popupTop = ref(0);
+const popupLeft = ref(0);
+
+watch(
+  () => props.graphData,
+  (newData) => {
+    if (!newData || Object.keys(newData).length === 0) return;
+    drawGraph(newData, props.packageName);
+  },
+  { deep: true }
+);
 
 const drawGraph = (data, target) => {
   const { nodes, edges } = buildGraph(data, target);
@@ -35,9 +45,7 @@ const drawGraph = (data, target) => {
     },
     physics: false,
     nodes: {
-      shape: 'dot',
       size: 16,
-      font: { size: 16, multi: true },
       widthConstraint: { maximum: 110 },
       borderWidth: 1,
     },
@@ -61,13 +69,29 @@ const handleNodeClick = (params, data) => {
 
   if (nodeId in data.sets) {
     emit('node-clicked', { nodeId, nodeType: 'set', items: data.sets[nodeId] });
+    popupVisible.value = false;
   } else if (nodeId.startsWith('libs_for_')) {
     const pkg = nodeId.replace('libs_for_', '');
     const libs = data.library_package?.[pkg] || [];
     if (libs.length > 0) {
       emit('node-clicked', { nodeId, nodeType: 'library', items: libs });
+      popupVisible.value = false;
     }
+  } else {
+    emit('node-clicked', { nodeId, nodeType: 'package' });
+
+    const pos = network.value.getPositions([nodeId])[nodeId];
+    const domPos = network.value.canvasToDOM(pos);
+
+    currentNodeId.value = nodeId;
+    popupTop.value = domPos.y + 10;
+    popupLeft.value = domPos.x + 10;
+    popupVisible.value = true;
   }
+};
+
+const closePopup = () => {
+  popupVisible.value = false;
 };
 
 const buildGraph = (data, target) => {
@@ -78,13 +102,25 @@ const buildGraph = (data, target) => {
 
   const addNode = (id, level, shape = 'dot', color = null, label = null) => {
     if (!nodes.has(id)) {
-      nodes.set(id, {
-        id,
-        label: label || id,
-        level,
-        shape,
-        ...(color && { color }),
-      });
+        let fontSettings = {
+            color: '#000',
+            size: 16,
+            strokeColor: '#fff',
+            multi: 'html',
+        };
+
+        if (shape !== 'box') {
+            fontSettings.background = 'white';
+        }
+
+        nodes.set(id, {
+            id,
+            label: label || id,
+            level,
+            shape,
+            ...(color && { color }),
+            font: fontSettings,
+        });
     } else {
       const node = nodes.get(id);
       if (level < node.level) node.level = level;
@@ -160,5 +196,20 @@ const buildGraph = (data, target) => {
 </script>
 
 <template>
-  <div ref="container" style="height: 700px; border: 1px solid #ccc; margin-top: 20px;"></div>
+  <div style="position: relative;">
+    <div ref="container" style="height: 700px; border: 1px solid #ccc; margin-top: 20px;"></div>
+
+    <PackagePopup
+      v-if="popupVisible"
+      :package-id="currentNodeId"
+      :packageName="props.packageName"
+      :style="{
+        position: 'absolute',
+        top: popupTop + 'px',
+        left: popupLeft + 'px',
+        zIndex: 200,
+      }"
+      @close="closePopup"
+    />
+  </div>
 </template>
