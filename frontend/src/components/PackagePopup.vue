@@ -5,10 +5,9 @@ import axios from 'axios';
 const props = defineProps({
   packageId: String,
 });
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'goToPackage']);
 
 const packageInfo = ref(null);
-const loading = ref(false);
 const error = ref(null);
 
 watch(
@@ -16,7 +15,6 @@ watch(
   async (newId) => {
     if (!newId) return;
 
-    loading.value = true;
     error.value = null;
     packageInfo.value = null;
 
@@ -28,13 +26,14 @@ watch(
     packageInfo.value = response.data;
     } catch (err) {
       error.value = 'Ошибка при загрузке информации о пакете';
-      console.error(err);
-    } finally {
-      loading.value = false;
     }
   },
   { immediate: true }
 );
+
+const goToPackage = () => {
+  emit('goToPackage', props.packageId);
+};
 </script>
 
 <template>
@@ -44,17 +43,19 @@ watch(
       <button @click="$emit('close')" class="close-btn">×</button>
     </div>
 
-    <div v-if="loading">Загрузка...</div>
-    <div v-else-if="error">{{ error }}</div>
+    <div v-if="error">{{ error }}</div>
     <div v-else-if="packageInfo">
-      <p><strong>Версия:</strong> {{ packageInfo.version }}</p>
-      <p><strong>Релиз:</strong> {{ packageInfo.release }}</p>
-      <p><strong>Юрл:</strong> 
+      <p><strong>Version:</strong> {{ packageInfo.version }}</p>
+      <p><strong>Release:</strong> {{ packageInfo.release }}</p>
+      <p><strong>Url:</strong> 
         <a :href="packageInfo.url" target="_blank" rel="noopener noreferrer">
             {{ packageInfo.url }}
         </a>
       </p>
-      <p><strong>Невра:</strong> {{ packageInfo.nevra }}</p>
+      <p><strong>NEVRA:</strong> {{ packageInfo.nevra }}</p>
+      <button class="go-btn" @click="goToPackage" v-if="packageInfo && props.packageId">
+      Перейти
+      </button>
     </div>
   </div>
 </template>
@@ -79,5 +80,26 @@ watch(
 
 .close-btn:hover {
   color: red;
+}
+
+.go-btn {
+  display: block;
+  width: 60%;
+  max-width: 200px;
+  margin: 10px auto 0 auto;
+  padding: 12px 0;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.go-btn:hover {
+  background-color: #0056b3;
 }
 </style>

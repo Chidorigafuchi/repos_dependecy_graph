@@ -1,23 +1,56 @@
 <script setup>
-import { computed, defineProps, defineModel } from 'vue';
+import { computed, defineProps, ref, nextTick } from 'vue';
+import PackagePopup from './PackagePopup.vue';
 
 const props = defineProps({
   nodeId: String,
-  nodeType: String,
   nodeItems: Array,
+  nodeType: String,
 });
-const filterText = defineModel('filterText');
+const emit = defineEmits(['close']);
+
+const filterText = ref('');
+const selectedPackage = ref(null);
+const modalRef = ref(null);
+
+const popupStyle = ref({
+  position: 'absolute',
+  top: '0px',
+  left: '0px',
+  zIndex: 300,
+});
 
 const filteredItems = computed(() => {
   return props.nodeItems.filter(item =>
     item.toLowerCase().includes(filterText.value.toLowerCase())
   );
 });
+
+const onItemClick = async (item) => {
+  selectedPackage.value = item;
+
+  await nextTick();
+
+  if (modalRef.value) {
+    const rect = modalRef.value.getBoundingClientRect();
+    popupStyle.value.top = rect.top + 'px';
+    popupStyle.value.left = rect.right + 10 + 'px';
+  }
+};
+
+const closePackagePopup = () => {
+  selectedPackage.value = null;
+};
+
+function handleGoToPackage(packageId) {
+  emit('goToPackage', packageId);
+  emit('close');
+}
 </script>
 
 <template>
   <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal">
+    <div class="modal" ref="modalRef">
       <h3 v-if="nodeType === 'set'">
         Зависимости от <strong>{{ nodeId.replace('SET_', '') }}</strong>:
       </h3>
@@ -32,8 +65,23 @@ const filteredItems = computed(() => {
       />
 
       <ul>
-        <li v-for="item in filteredItems" :key="item">{{ item }}</li>
+        <li
+          v-for="item in filteredItems"
+          :key="item"
+          @click="onItemClick(item)"
+          :style="nodeType === 'set' ? { cursor: 'pointer', color: 'blue', textDecoration: 'underline' } : {}"
+        >
+          {{ item }}
+        </li>
       </ul>
+
+      <PackagePopup
+        v-if="selectedPackage && nodeType === 'set'"
+        :packageId="selectedPackage"
+        @close="closePackagePopup"
+        @goToPackage="handleGoToPackage"
+        :style="popupStyle"
+      />
     </div>
   </div>
 </template>

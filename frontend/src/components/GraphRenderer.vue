@@ -17,6 +17,8 @@ const popupVisible = ref(false);
 const popupTop = ref(0);
 const popupLeft = ref(0);
 
+const lastClickedNodeId = ref(null);
+
 watch(
   () => props.graphData,
   (newData) => {
@@ -66,6 +68,12 @@ const drawGraph = (data, target) => {
 const handleNodeClick = (params, data) => {
   const nodeId = params.nodes[0];
   if (!nodeId) return;
+
+  if (lastClickedNodeId.value !== nodeId) {
+    lastClickedNodeId.value = nodeId;
+    popupVisible.value = false;
+    return;
+  }
 
   if (nodeId in data.sets) {
     emit('node-clicked', { nodeId, nodeType: 'set', items: data.sets[nodeId] });
@@ -162,7 +170,10 @@ const buildGraph = (data, target) => {
     }
   };
 
-  const walkUp = (pkg, level) => {
+  const walkUp = (pkg, level, visited = new Set()) => {
+    if (visited.has(pkg)) return;
+    visited.add(pkg);
+
     addNode(pkg, level);
     addLibrariesForPackage(pkg, level);
 
@@ -173,7 +184,7 @@ const buildGraph = (data, target) => {
     for (const [parent] of parents) {
       addNode(parent, level - 1);
       edges.push({ from: parent, to: pkg });
-      walkUp(parent, level - 1);
+      walkUp(parent, level - 1, visited);
     }
 
     for (const [setName, packages] of Object.entries(data.set_package || {})) {
@@ -183,6 +194,7 @@ const buildGraph = (data, target) => {
       }
     }
   };
+
 
   addNode(target, 0, 'dot', '#ff9900');
   walkUp(target, 0);
@@ -210,6 +222,7 @@ const buildGraph = (data, target) => {
         zIndex: 200,
       }"
       @close="closePopup"
+      @goToPackage="$emit('goToPackage', $event)"
     />
   </div>
 </template>
