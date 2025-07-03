@@ -29,5 +29,5 @@ python backend/manage.py migrate
 
 echo "Настройка завершена! Для запуска:"
 echo "1. Активируйте окружение: source venv/bin/activate"
-echo "2. Запустите Django: python backend/manage.py runserver"
+echo "2. Запустите Django: python manage.py runserver"
 echo "3. Запустите Vue: cd frontend && npm run dev"

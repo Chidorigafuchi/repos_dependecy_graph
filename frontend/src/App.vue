@@ -1,85 +1,94 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import RepoSelector from './components/RepoSelector.vue';
+import GraphRenderer from './components/GraphRenderer.vue';
+import NodeModal from './components/NodeModal.vue';
+
+import { ref } from 'vue';
+import axios from 'axios';
+
+const packageName = ref('');
+const selectedRepos = ref([]);
+const repositories = ["os", "updates", "debuginfo", "kernel-rt", "kernel-testing"];
+
+const graphData = ref({});
+
+const selectedNodeId = ref(null);
+const selectedNodeType = ref(null);
+const selectedNodeItems = ref([]);
+const filterText = ref('');
+
+const fetchGraph = async () => {
+  if (!packageName.value || selectedRepos.value.length === 0) return;
+
+  try {
+    const response = await axios.post('http://localhost:8000/api/package/', {
+      name: packageName.value,
+      repos: selectedRepos.value,
+    });
+    graphData.value = response.data;
+  } catch (error) {
+    console.error('Ошибка при получении графа:', error);
+  }
+};
+
+const onNodeClicked = ({ nodeId, nodeType, items }) => {
+  selectedNodeId.value = nodeId;
+  selectedNodeType.value = nodeType;
+  selectedNodeItems.value = items;
+};
+
+const closeModal = () => {
+  selectedNodeId.value = null;
+  selectedNodeType.value = null;
+  selectedNodeItems.value = [];
+  filterText.value = '';
+};
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div class="app">
+    <repo-selector v-model:selectedRepos="selectedRepos" :repositories="repositories" />
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <input
+      v-model="packageName"
+      placeholder="Введите имя пакета"
+      @keyup.enter="fetchGraph"
+    />
+    <button @click="fetchGraph">Показать граф</button>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
+    <graph-renderer
+      :graphData="graphData"
+      :packageName="packageName"
+      @node-clicked="onNodeClicked"
+    />
 
-  <RouterView />
+    <node-modal
+      v-if="selectedNodeId"
+      :node-id="selectedNodeId"
+      :node-type="selectedNodeType"
+      :node-items="selectedNodeItems"
+      v-model:filterText="filterText"
+      @close="closeModal"
+    />
+  </div>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+.app {
+  padding: 20px;
+  font-family: Arial, sans-serif;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+input {
+  padding: 6px 10px;
+  font-size: 16px;
+  width: 300px;
+  margin-right: 10px;
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
+button {
+  padding: 6px 12px;
+  font-size: 16px;
+  cursor: pointer;
 }
 </style>
