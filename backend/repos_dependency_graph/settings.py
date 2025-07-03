@@ -58,7 +58,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173'
 ]
 
-ROOT_URLCONF = 'backend.urls'
+ROOT_URLCONF = 'repos_dependency_graph.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+WSGI_APPLICATION = 'repos_dependency_graph.wsgi.application'
 
 
 # Database

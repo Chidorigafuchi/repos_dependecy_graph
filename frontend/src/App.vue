@@ -30,9 +30,11 @@ const fetchGraph = async () => {
       repos: selectedRepos.value,
     });
     graphData.value = response.data;
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Ошибка при получении графа:', error);
-  } finally {
+  } 
+  finally {
     isLoading.value = false;
   }
 };
