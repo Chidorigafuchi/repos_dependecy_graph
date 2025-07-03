@@ -8,9 +8,7 @@ from .services.package_info import get_package_info
 class PackageView(APIView):
     def post(self, request):
         packages_graph = Graph.get_package_graph(request.data['name'], request.data['repos'])
-
-        print(packages_graph)
-
+        
         return Response(packages_graph)
     
 class PackageInfoView(APIView):

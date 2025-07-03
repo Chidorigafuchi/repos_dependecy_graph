@@ -1,7 +1,6 @@
 <script setup>
 import Multiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.min.css';
-import { defineProps, defineModel } from 'vue';
 
 const props = defineProps({ repositories: Array });
 const selected = defineModel('selectedRepos');
