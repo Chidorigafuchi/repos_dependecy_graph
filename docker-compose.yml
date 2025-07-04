@@ -1,4 +1,4 @@
-name: myapp
+name: repos_dependency_graph
 
 services:
   backend:

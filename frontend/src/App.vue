@@ -1,7 +1,7 @@
 <script setup>
 import RepoSelector from './components/RepoSelector.vue';
 import GraphRenderer from './components/GraphRenderer.vue';
-import NodeModal from './components/NodeModal.vue';
+import NodeModal from './components/NodeElements.vue';
 
 import { ref } from 'vue';
 import axios from 'axios';

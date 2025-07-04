@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { Network } from 'vis-network';
-import PackagePopup from './PackagePopup.vue';
+import PackagePopup from './NodeInfo.vue';
 import { buildGraph } from '@/utils/graphBuilder';
 
 const props = defineProps({

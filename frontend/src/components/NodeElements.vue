@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, nextTick } from 'vue';
-import PackagePopup from './PackagePopup.vue';
+import PackagePopup from './NodeInfo.vue';
 
 const props = defineProps({
   nodeId: String,
