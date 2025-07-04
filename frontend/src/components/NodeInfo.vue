@@ -53,6 +53,18 @@ const goToPackage = () => {
         </a>
       </p>
       <p><strong>NEVRA:</strong> {{ packageInfo.nevra }}</p>
+      <p>
+        <strong>Conflicts:</strong>
+        <ul>
+          <li v-for="(item, index) in packageInfo.conflicts" :key="index">{{ item }}</li>
+        </ul>
+      </p>
+      <p>
+        <strong>Obsoletes:</strong>
+        <ul>
+          <li v-for="(item, index) in packageInfo.obsoletes" :key="index">{{ item }}</li>
+        </ul>
+      </p>
       <button class="go-btn" @click="goToPackage" v-if="packageInfo && props.packageId">
       Перейти
       </button>
