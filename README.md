@@ -21,21 +21,20 @@
 
 ### 🛠 Запуск
 
-Перед запуском необходимо создать .env файл в папке backend по примеру .env.example:
-
-```env
-DJANGO_SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-```
-
 1. Клонируйте репозиторий или распакуйте архив:
 
    ```bash
    git clone https://github.com/Chidorigafuchi/repos_dependecy_graph.git
    cd repos_dependecy_graph
    ```
-2. Постройте и запустите контейнеры:
+2. Перед запуском необходимо создать .env файл в папке backend по примеру .env.example:
+
+   ```env
+   DJANGO_SECRET_KEY=your-secret-key
+   DEBUG=True
+   ALLOWED_HOSTS=localhost,127.0.0.1
+   ```
+3. Постройте и запустите контейнеры:
 
    ```bash
    docker-compose up --build
@@ -81,7 +80,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1
         "libedit": ["libtinfo.so.6"],
         },
   "sets": {
-        "SET_glibc-langpack": ["glibc-langpack-ar", "glibc-langpack-kw", ]
+        "SET_glibc-langpack": ["glibc-langpack-ar", "glibc-langpack-kw"]
     }
 }
 ```
