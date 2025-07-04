@@ -26,8 +26,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 DEBUG = os.getenv('DEBUG')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
 
 # Application definition
 
@@ -58,7 +57,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173'
 ]
 
-ROOT_URLCONF = 'backend.urls'
+ROOT_URLCONF = 'repos_dependency_graph.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +74,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+WSGI_APPLICATION = 'repos_dependency_graph.wsgi.application'
 
 
 # Database

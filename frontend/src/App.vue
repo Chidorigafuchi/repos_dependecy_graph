@@ -1,7 +1,7 @@
 <script setup>
 import RepoSelector from './components/RepoSelector.vue';
 import GraphRenderer from './components/GraphRenderer.vue';
-import NodeModal from './components/NodeModal.vue';
+import NodeModal from './components/NodeElements.vue';
 
 import { ref } from 'vue';
 import axios from 'axios';
@@ -17,8 +17,12 @@ const selectedNodeType = ref(null);
 const selectedNodeItems = ref([]);
 const filterText = ref('');
 
+const isLoading = ref(false);
+
 const fetchGraph = async () => {
   if (!packageName.value || selectedRepos.value.length === 0) return;
+
+  isLoading.value = true;
 
   try {
     const response = await axios.post('http://localhost:8000/api/package/', {
@@ -26,15 +30,19 @@ const fetchGraph = async () => {
       repos: selectedRepos.value,
     });
     graphData.value = response.data;
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Ошибка при получении графа:', error);
+  } 
+  finally {
+    isLoading.value = false;
   }
 };
 
 const onNodeClicked = ({ nodeId, nodeType, items }) => {
   selectedNodeId.value = nodeId;
   selectedNodeType.value = nodeType;
-  selectedNodeItems.value = items;
+  selectedNodeItems.value = items || []
 };
 
 const closeModal = () => {
@@ -42,6 +50,11 @@ const closeModal = () => {
   selectedNodeType.value = null;
   selectedNodeItems.value = [];
   filterText.value = '';
+};
+
+const onGoToPackage = (newPackageName) => {
+  packageName.value = newPackageName;
+  fetchGraph();
 };
 </script>
 
@@ -54,21 +67,23 @@ const closeModal = () => {
       placeholder="Введите имя пакета"
       @keyup.enter="fetchGraph"
     />
-    <button @click="fetchGraph">Показать граф</button>
-
+    <button :disabled="isLoading" @click="fetchGraph">Показать граф</button>
+    
     <graph-renderer
       :graphData="graphData"
       :packageName="packageName"
       @node-clicked="onNodeClicked"
+      @goToPackage="onGoToPackage"
     />
 
     <node-modal
-      v-if="selectedNodeId"
+      v-if="selectedNodeId && (selectedNodeType === 'set' || selectedNodeType === 'library')"
       :node-id="selectedNodeId"
       :node-type="selectedNodeType"
       :node-items="selectedNodeItems"
       v-model:filterText="filterText"
       @close="closeModal"
+      @goToPackage="onGoToPackage"
     />
   </div>
 </template>
