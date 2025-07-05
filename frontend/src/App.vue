@@ -41,26 +41,35 @@ const fetchGraph = async () => {
 };
 
 const trackPackage = async () => {
+  if (!packageName.value || selectedRepos.value.length === 0) return;
+  
+  isLoading.value = true;
+
   try {
     const response = await axios.post('http://localhost:8000/api/track_package/', {
-      name: packageName.value
+      name: packageName.value,
+      repos: selectedRepos.value,
     }, 
     {
       withCredentials: true
     })
 
-    if (response.data.created === true) {
+    if (response.data.track_created === true) {
       message.value = `Пакет "${packageName.value}" добавлен в отслеживание.`
     } 
-    else if (response.data.created === false) {
+    else if (response.data.track_created === false) {
       message.value = `Пакет "${packageName.value}" уже отслеживается.`
     }
     else {
       message.value = 'Неожиданный ответ от сервера.'
     }
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Ошибка при отслеживании пакета:', error)
     message.value = 'Ошибка при добавлении пакета в отслеживание.'
+  }
+  finally {
+    isLoading.value = false;
   }
 };
 
@@ -94,7 +103,7 @@ const onGoToPackage = (newPackageName) => {
     />
     <button :disabled="isLoading || !packageName || selectedRepos.length === 0" @click="fetchGraph">Показать граф</button>
     <div>
-      <button :disabled="isLoading || !packageName" @click="trackPackage">Добавить в отслеживаемые</button>
+      <button :disabled="isLoading || !packageName || selectedRepos.length === 0" @click="trackPackage">Добавить в отслеживаемые</button>
       <p>{{ message }}</p>
     </div>
     

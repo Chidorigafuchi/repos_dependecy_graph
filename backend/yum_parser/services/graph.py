@@ -16,6 +16,9 @@ class Graph:
                 return {}
             
         if repos != cls.used_repos:
+            print('Репозитории не совпадают.')
+            print('Прошлые репозитории - ', cls.used_repos)
+            print('Новые репозитории - ', repos)
             deleted_repos = [old_repo for old_repo in cls.used_repos if old_repo not in repos]
             if not deleted_repos:
                 new_repos = [new_repo for new_repo in repos if new_repo not in cls.used_repos]
