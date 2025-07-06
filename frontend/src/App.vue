@@ -23,6 +23,7 @@ const isLoading = ref(false);
 const fetchGraph = async () => {
   if (!packageName.value || selectedRepos.value.length === 0) return;
 
+  message.value = '' 
   isLoading.value = true;
 
   try {
