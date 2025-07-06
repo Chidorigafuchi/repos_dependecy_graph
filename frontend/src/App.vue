@@ -109,8 +109,8 @@ const onGoToPackage = (newPackageName) => {
     </div>
     
     <graph-renderer
-      :graphData="graphData"
-      :packageName="packageName"
+      :graph-data="graphData"
+      :package-name="packageName"
       @node-clicked="onNodeClicked"
       @goToPackage="onGoToPackage"
     />
@@ -120,6 +120,7 @@ const onGoToPackage = (newPackageName) => {
       :node-id="selectedNodeId"
       :node-type="selectedNodeType"
       :node-items="selectedNodeItems"
+      :selected-repos="selectedRepos"
       v-model:filterText="filterText"
       @close="closeModal"
       @goToPackage="onGoToPackage"

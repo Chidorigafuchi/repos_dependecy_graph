@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
-  packageId: String,
+  packageId: String
 });
 const emit = defineEmits(['close', 'goToPackage']);
 
@@ -20,7 +20,7 @@ watch(
 
     try {
       const response = await axios.get('http://localhost:8000/api/package_info/', {
-      params: { package_name: newId }
+      params: { name: newId }
     });
     if (!newId) error.value = 'Ошибка при загрузке информации о пакете';
     packageInfo.value = response.data;

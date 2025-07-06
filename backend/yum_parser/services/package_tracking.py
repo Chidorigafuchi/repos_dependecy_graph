@@ -1,5 +1,5 @@
-from .graph import Graph
-from .package_info import Package_info
+from .graph import get_package_graph
+from .package_info import get_package_info
 from ..models import Tracked_package, Package_nevra, Package_repos_graph
 from json import dumps
 from typing import Dict, List, Optional
@@ -7,28 +7,27 @@ from typing import Dict, List, Optional
 
 def track_package(session_key: str, package_name: str, repos: List[str]) -> Optional[Dict[str, bool]]:
     created = False
-    new = False
-
-    if  Graph.packages.get(package_name):
-        repos.sort()
-        
-        obj, created = Tracked_package.objects.get_or_create(
-            session_key=session_key,
-            name=package_name,
-            repos=dumps(repos)
-        )
-        
-        if created:
-            new_nevra, new_graph = save_package_snapshot(package_name, repos)
+    new_nevra = False
+    
+    repos.sort()
+    
+    obj, created = Tracked_package.objects.get_or_create(
+        session_key=session_key,
+        name=package_name,
+        repos=dumps(repos)
+    )
+    
+    if created:
+        new_nevra, new_graph = save_package_snapshot(package_name, repos)
 
     return {'track_created': created, 'version_created': new_nevra}
 
 def save_package_snapshot(package_name: str, repos: List[str]) -> bool:
-    info = Package_info.get_package_info(package_name)
+    info = get_package_info(package_name)
 
     print(f'{package_name} , {repos} - {info}')
 
-    graph_data = Graph.get_package_graph(package_name, repos)
+    graph_data = get_package_graph(package_name, repos)
 
     new_graph = False
 

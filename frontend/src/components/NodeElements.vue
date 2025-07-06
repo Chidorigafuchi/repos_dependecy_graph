@@ -77,7 +77,7 @@ function handleGoToPackage(packageId) {
 
       <PackagePopup
         v-if="selectedPackage && nodeType === 'set'"
-        :packageId="selectedPackage"
+        :package-id="selectedPackage"
         @close="closePackagePopup"
         @goToPackage="handleGoToPackage"
         :style="popupStyle"
