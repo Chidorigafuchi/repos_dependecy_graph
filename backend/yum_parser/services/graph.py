@@ -1,5 +1,5 @@
 from .parser import parse_packages
-
+from typing import Dict, List, Tuple
 
 class Graph:
     packages = {}
@@ -8,7 +8,11 @@ class Graph:
     used_repos = []
 
     @classmethod
-    def get_package_graph(cls, pkg_name, repos):
+    def get_package_graph(
+        cls, 
+        pkg_name: str, 
+        repos: List[str]
+    ) -> Dict[str, Dict[str, List[str]]]:
         if not cls.packages:
             cls.packages = parse_packages(cls.packages, repos)
             cls.used_repos = repos
@@ -16,9 +20,6 @@ class Graph:
                 return {}
             
         if repos != cls.used_repos:
-            print('Репозитории не совпадают.')
-            print('Прошлые репозитории - ', cls.used_repos)
-            print('Новые репозитории - ', repos)
             deleted_repos = [old_repo for old_repo in cls.used_repos if old_repo not in repos]
             if not deleted_repos:
                 new_repos = [new_repo for new_repo in repos if new_repo not in cls.used_repos]
@@ -62,7 +63,12 @@ class Graph:
         return packages_graph
     
     @classmethod
-    def get_package_neighbours(cls, current_package, packages_graph, up):
+    def get_package_neighbours(
+        cls, 
+        current_package: str, 
+        packages_graph: Dict[str, Dict[str, List[str]]], 
+        up: bool
+    ) -> Tuple[List[str], Dict[str, Dict[str, List[str]]]]:
         dependecies = []
         neighbours = []
         package_info = cls.packages[current_package]
@@ -78,7 +84,13 @@ class Graph:
         return neighbours, packages_graph
     
     @classmethod
-    def find_package_neighbours(cls, dependecies, current_package, packages_graph, up):
+    def find_package_neighbours(
+        cls, 
+        dependecies: List[str], 
+        current_package: str, 
+        packages_graph: Dict[str, Dict[str, List[str]]], 
+        up: bool
+    ) -> Tuple[List[str], Dict[str, Dict[str, List[str]]]]:
         neighbours = []
         dependecies_neighbours = {}
 
@@ -110,7 +122,13 @@ class Graph:
 
         return neighbours, packages_graph
 
-    def add_dependence(main_packages, dependent_packages, dependency, packages_graph):
+    @staticmethod
+    def add_dependence(
+        main_packages: List[str], 
+        dependent_packages: List[str], 
+        dependency: str, 
+        packages_graph: Dict[str, Dict[str, List[str]]]
+        ) -> Dict[str, Dict[str, List[str]]]:
         if (len(main_packages) == 1):
             package_name = main_packages[0]
 

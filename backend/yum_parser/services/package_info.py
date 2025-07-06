@@ -1,11 +1,12 @@
 from .graph import Graph
+from typing import Dict, List, Union 
 
 class Package_info:
     saved_package_info = {}
     current_package = ''
 
     @classmethod
-    def get_package_info(cls, package_name):
+    def get_package_info(cls, package_name: str) -> Dict[str, Union[str, List[str]]]:
         if cls.current_package == package_name:
             return cls.saved_package_info
         
@@ -34,7 +35,7 @@ class Package_info:
 
         return package_info
 
-    def get_names(dependecies):
+    def get_names(dependecies: List[List[str]]) -> List[str]:
         if dependecies:
             dependecies = list(zip(*dependecies))[0]
         return dependecies
