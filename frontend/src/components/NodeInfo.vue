@@ -20,7 +20,7 @@ watch(
 
     try {
       const response = await axios.get('http://localhost:8000/api/package_info/', {
-      params: { name: newId }
+      params: { package_name: newId }
     });
     if (!newId) error.value = 'Ошибка при загрузке информации о пакете';
     packageInfo.value = response.data;

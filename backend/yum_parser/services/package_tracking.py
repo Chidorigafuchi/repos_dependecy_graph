@@ -10,6 +10,8 @@ def track_package(session_key: str, package_name: str, repos: List[str]) -> Opti
     new = False
 
     if  Graph.packages.get(package_name):
+        repos.sort()
+        
         obj, created = Tracked_package.objects.get_or_create(
             session_key=session_key,
             name=package_name,
@@ -23,6 +25,9 @@ def track_package(session_key: str, package_name: str, repos: List[str]) -> Opti
 
 def save_package_snapshot(package_name: str, repos: List[str]) -> bool:
     info = Package_info.get_package_info(package_name)
+
+    print(f'{package_name} , {repos} - {info}')
+
     graph_data = Graph.get_package_graph(package_name, repos)
 
     new_graph = False

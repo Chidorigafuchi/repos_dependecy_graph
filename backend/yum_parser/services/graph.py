@@ -6,6 +6,8 @@ class Graph:
     current_package = ''
     saved_packages_graph = {}
     used_repos = []
+    MIN_DEPENDENCIES_TO_SET = 5
+    MAX_NEIGHBOURS = 100
 
     @classmethod
     def get_package_graph(
@@ -29,7 +31,7 @@ class Graph:
                 cls.packages = parse_packages({}, repos)
                 cls.used_repos = repos
 
-        if (pkg_name not in cls.packages.keys()):
+        if (not cls.packages.get(pkg_name)):
             return {}
                     
         if pkg_name != cls.current_package:
@@ -50,11 +52,11 @@ class Graph:
 
         children_packages, packages_graph = cls.get_package_neighbours(pkg_name, packages_graph, up=False)
 
-        if len(parent_packages) < 100:
+        if len(parent_packages) < cls.MAX_NEIGHBOURS:
             for package in parent_packages:
                 _, packages_graph = cls.get_package_neighbours(package, packages_graph, up=True)
         
-        if len(children_packages) < 100:
+        if len(children_packages) < cls.MAX_NEIGHBOURS:
             for package in children_packages:
                 _, packages_graph = cls.get_package_neighbours(package, packages_graph, up=False)
 
@@ -69,45 +71,45 @@ class Graph:
         packages_graph: Dict[str, Dict[str, List[str]]], 
         up: bool
     ) -> Tuple[List[str], Dict[str, Dict[str, List[str]]]]:
-        dependecies = []
+        dependencies = []
         neighbours = []
         package_info = cls.packages[current_package]
         package_info_dependencies = package_info[0] if up else package_info[1]
         
         for dependency in package_info_dependencies:
             dependency_name = dependency[0]
-            if dependency_name not in dependecies:
-                dependecies.append(dependency_name)
+            if dependency_name not in dependencies:
+                dependencies.append(dependency_name)
         
-        neighbours, packages_graph = cls.find_package_neighbours(dependecies, current_package, packages_graph, up)
+        neighbours, packages_graph = cls.find_package_neighbours(dependencies, current_package, packages_graph, up)
 
         return neighbours, packages_graph
     
     @classmethod
     def find_package_neighbours(
         cls, 
-        dependecies: List[str], 
+        dependencies: List[str], 
         current_package: str, 
         packages_graph: Dict[str, Dict[str, List[str]]], 
         up: bool
     ) -> Tuple[List[str], Dict[str, Dict[str, List[str]]]]:
         neighbours = []
-        dependecies_neighbours = {}
+        dependencies_neighbours = {}
 
-        for dependecy_name in dependecies:
-            dependecies_neighbours[dependecy_name] = []
+        for dependecy_name in dependencies:
+            dependencies_neighbours[dependecy_name] = []
         
         for package_name in cls.packages.keys(): 
             package_info_dependencies = cls.packages[package_name][1] if up else cls.packages[package_name][0]
             for dependecy in package_info_dependencies:
                 dependecy_name = dependecy[0]
-                if dependecy_name in dependecies:
-                    dependecies_neighbours[dependecy_name].append(package_name)
+                if dependecy_name in dependencies:
+                    dependencies_neighbours[dependecy_name].append(package_name)
                     if package_name not in neighbours:
                         neighbours.append(package_name)
 
-        for dependency in dependecies_neighbours.keys():
-            packages = dependecies_neighbours[dependency]
+        for dependency in dependencies_neighbours.keys():
+            packages = dependencies_neighbours[dependency]
             if (packages):
                 if up:
                     packages_graph = cls.add_dependence(packages, [current_package], dependency, packages_graph)
@@ -122,8 +124,9 @@ class Graph:
 
         return neighbours, packages_graph
 
-    @staticmethod
+    @classmethod
     def add_dependence(
+        cls,
         main_packages: List[str], 
         dependent_packages: List[str], 
         dependency: str, 
@@ -132,27 +135,27 @@ class Graph:
         if (len(main_packages) == 1):
             package_name = main_packages[0]
 
-            if len(dependent_packages) < 5:
-                if (package_name in packages_graph['package_package'].keys()):
+            if len(dependent_packages) < cls.MIN_DEPENDENCIES_TO_SET:
+                if package_package := (packages_graph['package_package'].get(package_name)):
                     for dependent_pkg in dependent_packages:
-                        if dependent_pkg not in packages_graph['package_package'][package_name]:
-                            packages_graph['package_package'][package_name].append(dependent_pkg)
+                        if dependent_pkg not in package_package:
+                            package_package.append(dependent_pkg)
                 else:
                     packages_graph['package_package'][package_name] = dependent_packages
             else:
                 dependency_name = 'SET_' + dependency
                 packages_graph['sets'][dependency_name] = dependent_packages
-                if (package_name in packages_graph['set_package'].keys()):
-                    packages_graph['set_package'][package_name].append(dependency_name)
+                if set_package := packages_graph['set_package'].get(package_name):
+                    set_package.append(dependency_name)
                 else:
-                    packages_graph['set_package'][package_name] = [dependency_name]
+                    set_package = [dependency_name]
         else:
             dependency_name = 'SET_' + dependency
             packages_graph['sets'][dependency_name] = main_packages
-            if (dependency_name in packages_graph['set_package'].keys()):
-                packages_graph['set_package'][dependency_name] += dependent_packages
+            if set_package := packages_graph['set_package'].get(dependency_name):
+                set_package += dependent_packages
             else:
-                packages_graph['set_package'][dependency_name] = dependent_packages
+                set_package = dependent_packages
         
         return packages_graph
 

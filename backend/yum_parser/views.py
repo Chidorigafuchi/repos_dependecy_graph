@@ -16,7 +16,7 @@ class PackageView(APIView):
     
 class PackageInfoView(APIView):
     def get(self, request):
-        pkg_name = request.query_params.get('name')
+        pkg_name = request.query_params.get('package_name')
         
         package_info = Package_info.get_package_info(pkg_name)
 

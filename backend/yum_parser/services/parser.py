@@ -9,9 +9,6 @@ def parse_packages(packages: Dict[str, List[Any]], repos: List[str]) -> Dict[str
 
         for key in repodata.keys():
             pkg = repodata.get(key)
-
-            if pkg.name in packages.keys():
-                continue
             
             pkg_info = [
                 pkg.requires,
@@ -25,7 +22,5 @@ def parse_packages(packages: Dict[str, List[Any]], repos: List[str]) -> Dict[str
             ]
 
             packages[pkg.name] = pkg_info
-
-        del repodata
 
     return packages
