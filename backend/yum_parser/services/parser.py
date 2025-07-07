@@ -1,9 +1,24 @@
 import createrepo_c
+from dataclasses import dataclass
 from typing import Dict, List, Any, Tuple
 from pickle import dumps, loads
 from zlib import compress, decompress
 
 from repos_dependency_graph.services.redis import redis_cache
+
+@dataclass(slots=True)
+class PackageDependencies:
+    requires: List[str]
+    provides: List[str]
+
+@dataclass
+class PackageInfo:
+    obsoletes: List[str]
+    conflicts: List[str]
+    nevra: str
+    version: str
+    release: str
+    url: str
 
 
 def parse_packages():
@@ -24,22 +39,21 @@ def parse_packages():
         for key in keys:
             pkg = repodata.get(key)
 
-            pkg_dependencies = {
-                'requires': pkg.requires,
-                'provides': pkg.provides,
-            }
-        
-            pkg_info = {
-                'obsoletes': get_names(pkg.obsoletes),
-                'conflicts': get_names(pkg.conflicts),
-                'nevra': pkg.nevra(),
-                'version': pkg.version,
-                'release': pkg.release,
-                'url': pkg.url
-            }
+            packages_dependencies[pkg.name] = PackageDependencies(
+                requires=pkg.requires,
+                provides=pkg.provides
+            )
 
-            packages_dependencies[pkg.name] = pkg_dependencies
-            packages_info[pkg.name] = pkg_info
+            packages_info[pkg.name] = PackageInfo(
+                obsoletes=get_names(pkg.obsoletes),
+                conflicts=get_names(pkg.conflicts),
+                nevra=pkg.nevra(),
+                version=pkg.version,
+                release=pkg.release,
+                url=pkg.url
+            )
+            
+            repodata.remove(key)
 
         repos_packages_dependencies[repo] = packages_dependencies
         repos_packages_info.update(packages_info)

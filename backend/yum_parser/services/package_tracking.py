@@ -31,10 +31,10 @@ def save_package_snapshot(package_name: str, repos: List[str], graph, info) -> b
 
     package_nevra, new_nevra = Package_nevra.objects.get_or_create(
         name=package_name,
-        nevra=info['nevra'],
+        nevra=info.nevra,
         defaults={
-            'obsoletes': json.dumps(info['obsoletes']),
-            'conflicts': json.dumps(info['conflicts']),
+            'obsoletes': json.dumps(info.obsoletes),
+            'conflicts': json.dumps(info.conflicts),
         }
     )
 

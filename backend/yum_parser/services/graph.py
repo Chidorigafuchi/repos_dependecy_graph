@@ -5,7 +5,6 @@ from repos_dependency_graph.services.redis import redis_cache, make_cache_key
 
 from .parser import repos_union, get_names
 
-
 MIN_DEPENDENCIES_TO_SET = 5
 MAX_NEIGHBOURS = 100
 
@@ -84,7 +83,7 @@ def get_package_neighbours(
     up: bool
 ) -> Tuple[List[str], Dict[str, Dict[str, List[str]]]]:
     package_info = repos_packages[current_package]
-    package_info_dependencies = package_info['requires'] if up else package_info['provides']
+    package_info_dependencies = package_info.requires if up else package_info.provides
     
     dependencies = get_names(package_info_dependencies)
     
@@ -113,9 +112,9 @@ def find_package_neighbours(
     
     for package_name in repos_packages.keys(): 
         if up:
-            package_info_dependencies = repos_packages[package_name]['provides'] 
+            package_info_dependencies = repos_packages[package_name].provides
         else:
-            package_info_dependencies = repos_packages[package_name]['requires']
+            package_info_dependencies = repos_packages[package_name].requires
         
         for dependecy in package_info_dependencies:
             dependecy_name = dependecy[0]
