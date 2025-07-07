@@ -1,10 +1,14 @@
-from .parser import repos_union, get_names
-from typing import Dict, List, Tuple, Any
-from repos_dependency_graph.services.redis import redis_cache, make_cache_key
 from pickle import dumps, loads
+from typing import Dict, List, Tuple, Any
+
+from repos_dependency_graph.services.redis import redis_cache, make_cache_key
+
+from .parser import repos_union, get_names
+
 
 MIN_DEPENDENCIES_TO_SET = 5
 MAX_NEIGHBOURS = 100
+
 
 def get_package_graph_with_cache(
     session_key: str,
@@ -23,8 +27,9 @@ def get_package_graph_with_cache(
 
     return packages_graph
 
-def get_package_graph(pkg_name: str, repos: List[str]) -> Dict[str, Dict[str, List[str]]]:
-    repos_packages = repos_union(repos)
+def get_package_graph(pkg_name: str, repos: List[str], repos_packages={}) -> Dict[str, Dict[str, List[str]]]:
+    if not repos_packages:
+        repos_packages = repos_union(repos)
 
     if (not repos_packages.get(pkg_name)):
         return {}
