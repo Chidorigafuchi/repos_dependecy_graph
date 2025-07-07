@@ -21,7 +21,18 @@ class PackageInfo:
     url: str
 
 
-def parse_packages():
+def parse_packages() -> None:
+    """
+    Загружает метаданные пакетов из указанных репозиториев, извлекает зависимости и информацию о пакетах,
+    сериализует и сжимает их, затем сохраняет в Redis кэш на 25 часов.
+
+    Redis keys used:
+    - 'repos_dependencies:compressed': зависимости пакетов по каждому репозиторию
+    - 'repos_info:compressed': основная информация о пакетах (без деления по репозиториям)
+
+    Returns:
+        None
+    """
     repos = ['os', 'updates', 'debuginfo', 'kernel-rt', 'kernel-testing']
     repos_packages_dependencies = {}
     repos_packages_info = {}
@@ -64,7 +75,18 @@ def parse_packages():
     redis_cache.set('repos_dependencies:compressed', compressed_dependencies, ex=60 * 60 * 25)
     redis_cache.set('repos_info:compressed', compressed_info, ex=60 * 60 * 25)
     
-def repos_union(repos: List[str]) -> Dict[str, List[Any]]:
+def repos_union(repos: List[str]) -> Dict[str, PackageDependencies]:
+    """
+    Объединяет зависимости пакетов из нескольких репозиториев в один словарь.
+
+    Если кэш в Redis недоступен, данные будут заново загружены и сохранены в кэш на 25 часов.
+
+    Args:
+        repos (List[str]): Список названий репозиториев.
+
+    Returns:
+        Dict[str, PackageDependencies]: Словарь зависимостей по именам пакетов.
+    """
     cached_packages_data = redis_cache.get('repos_dependencies:compressed')
     packages = {}
     repos_packages = {}
@@ -78,11 +100,22 @@ def repos_union(repos: List[str]) -> Dict[str, List[Any]]:
         repos_packages = loads(decompressed_data)
 
     for repo in repos:
-        packages.update(repos_packages[repo])
+        if repo in repos_packages:
+            packages.update(repos_packages[repo])
 
     return packages
 
-def get_names(dependecies: List[Tuple[str]]) -> List[str]:
-    if dependecies:
-        dependecies = list(list(zip(*dependecies))[0])
-    return dependecies
+def get_names(dependencies: List[Tuple[str]]) -> List[str]:
+    """
+    Извлекает имена зависимостей из списка кортежей.
+
+    Args:
+        dependencies (List[Tuple[str]]): Зависимости в виде кортежей [(имя, ...), (имя, ...)] .
+
+    Returns:
+        List[str]: Список имён зависимостей.
+    """
+    if dependencies:
+        return list(list(zip(*dependencies))[0])
+    
+    return []

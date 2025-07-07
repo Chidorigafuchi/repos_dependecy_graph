@@ -1,11 +1,25 @@
-from typing import Dict, List, Union 
+from typing import Dict, List, Union, Optional
 from pickle import dumps, loads
 from zlib import decompress
+from .parser import PackageInfo
 
 from repos_dependency_graph.services.redis import redis_cache, make_cache_key
 
 
 def get_package_info_with_cache(session_key: str, package_name: str) -> Dict[str, Union[str, List[str]]]:
+    """
+    Получает информацию о пакете, используя кэш Redis для ускорения повторных запросов.
+
+    Если данные по пакету уже сохранены в Redis — возвращаются они.
+    Если данных нет — вызывается `get_package_info`, результат сохраняется в Redis на 1 минуту.
+
+    Args:
+        session_key (str): Уникальный ключ сессии пользователя (используется в генерации ключа Redis).
+        package_name (str): Имя интересующего пакета.
+
+    Returns:
+        Dict[str, Union[str, List[str]]]: Словарь с информацией о пакете.
+    """
     redis_key = make_cache_key(session_key, package_name, [], 'info:')
     saved_packages_info = redis_cache.get(redis_key)
 
@@ -17,8 +31,23 @@ def get_package_info_with_cache(session_key: str, package_name: str) -> Dict[str
     redis_cache.set(redis_key, dumps(package_info), ex=60 * 1)
 
     return package_info
-def get_package_info(package_name: str) -> Dict[str, Union[str, List[str]]]:
-    decompressed_data = decompress(redis_cache.get('repos_info:compressed'))
+
+def get_package_info(package_name: str) -> Optional[PackageInfo]:
+    """
+    Извлекает информацию о пакете из глобального кэша Redis, содержащего данные по всем пакетам.
+
+    Args:
+        package_name (str): Имя пакета, информацию о котором нужно получить.
+
+    Returns:
+        PackageInfo: Дата-класс с информацией о пакете, либо None, если пакет не найден.
+    """
+    compressed_data = redis_cache.get('repos_info:compressed')
+    
+    if not decompressed_data:
+        return None
+
+    decompressed_data = decompress(compressed_data)
     cached_packages_info = loads(decompressed_data)
 
     package_info = cached_packages_info.get(package_name)

@@ -3,6 +3,7 @@ import subprocess
 from pickle import loads
 from zlib import decompress
 from collections import defaultdict
+from typing import Dict
 
 from .models import Tracked_package
 from .services.graph import get_package_graph
@@ -12,7 +13,20 @@ from repos_dependency_graph.services.redis import redis_cache
 
 
 @shared_task
-def update_tracked_snapshots():
+def update_tracked_packages() -> Dict[str, int]:
+    """
+    Задача для Celery
+    Проверяет наличие новых вышедших версий у пакетов
+
+    Для каждого уникального набора репозиториев группирует отслеживаемые пакеты,
+    загружает информацию о пакетах из Redis, строит графы зависимостей и сохраняет
+    снимки с помощью `save_package_snapshot`.
+
+    Возвращает количество успешно обновлённых пакетов.
+
+    Returns:
+        Dict[str, int]: Словарь с ключом 'Обновленных пакетов' и числом обновлённых пакетов.
+    """
     tracked = Tracked_package.objects.all().order_by('repos')
     updated = 0
     repos_packages = defaultdict(list)
@@ -46,5 +60,13 @@ def update_tracked_snapshots():
     return result
 
 @shared_task
-def run_parse_packages_command():
+def run_parse_packages_command() -> None:
+    """
+    Запускает команду `parse_packages` через subprocess.
+
+    Используется для асинхронного вызова задачи парсинга пакетов из Celery.
+
+    Returns:
+        None
+    """
     subprocess.run(["python", "manage.py", "parse_packages"], check=True)
