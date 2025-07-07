@@ -1,7 +1,8 @@
 import createrepo_c
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from pickle import dumps, loads
 from zlib import compress, decompress
+
 from repos_dependency_graph.services.redis import redis_cache
 
 
@@ -9,18 +10,18 @@ def parse_packages():
     repos = ['os', 'updates', 'debuginfo', 'kernel-rt', 'kernel-testing']
     repos_packages_dependencies = {}
     repos_packages_info = {}
-
-    length = 0
     
     for repo in repos:
         repo_url = 'https://repo1.red-soft.ru/redos/8.0/x86_64/' + repo + '/'
         repodata = createrepo_c.Metadata()
         repodata.locate_and_load_xml(repo_url)
-        
+
         packages_dependencies = {}
         packages_info = {}
 
-        for key in repodata.keys():
+        keys = list(repodata.keys())
+
+        for key in keys:
             pkg = repodata.get(key)
 
             pkg_dependencies = {
@@ -36,12 +37,9 @@ def parse_packages():
                 'release': pkg.release,
                 'url': pkg.url
             }
-            
-            # new_package_name = pkg.name + '_' + repo
-            new_package_name = pkg.name
 
-            packages_dependencies[new_package_name] = pkg_dependencies
-            packages_info[new_package_name] = pkg_info
+            packages_dependencies[pkg.name] = pkg_dependencies
+            packages_info[pkg.name] = pkg_info
 
         repos_packages_dependencies[repo] = packages_dependencies
         repos_packages_info.update(packages_info)
@@ -49,8 +47,8 @@ def parse_packages():
     compressed_dependencies = compress(dumps(repos_packages_dependencies))
     compressed_info = compress(dumps(repos_packages_info))
 
-    redis_cache.set('repos_dependencies:compressed', compressed_dependencies, ex=60 * 60 * 24)
-    redis_cache.set('repos_info:compressed', compressed_info, ex=60 * 60 * 24)
+    redis_cache.set('repos_dependencies:compressed', compressed_dependencies, ex=60 * 60 * 25)
+    redis_cache.set('repos_info:compressed', compressed_info, ex=60 * 60 * 25)
     
 def repos_union(repos: List[str]) -> Dict[str, List[Any]]:
     cached_packages_data = redis_cache.get('repos_dependencies:compressed')
@@ -70,7 +68,7 @@ def repos_union(repos: List[str]) -> Dict[str, List[Any]]:
 
     return packages
 
-def get_names(dependecies: List[List[str]]) -> List[str]:
+def get_names(dependecies: List[Tuple[str]]) -> List[str]:
     if dependecies:
-        dependecies = list(zip(*dependecies))[0]
+        dependecies = list(list(zip(*dependecies))[0])
     return dependecies

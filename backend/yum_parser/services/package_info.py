@@ -1,7 +1,8 @@
-from repos_dependency_graph.services.redis import redis_cache, make_cache_key
 from typing import Dict, List, Union 
 from pickle import dumps, loads
 from zlib import decompress
+
+from repos_dependency_graph.services.redis import redis_cache, make_cache_key
 
 
 def get_package_info_with_cache(session_key: str, package_name: str) -> Dict[str, Union[str, List[str]]]:
