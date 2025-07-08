@@ -29,8 +29,9 @@ def redis_get(key: str):
     try:
         return redis_cache.get(key)
     except redis.RedisError as e:
-        logger.warning(f"Ошибка Redis при получении ключа '{key}': {e}")
+        logger.error(f"Ошибка Redis при получении ключа '{key}': {e}")
         return None
+
 
 def redis_set(key: str, value, ex: int = None):
     """
@@ -52,6 +53,21 @@ def redis_set(key: str, value, ex: int = None):
     except redis.RedisError as e:
         logger.error(f"Ошибка Redis при установке ключа '{key}': {e}")
         return False
+
+
+def redis_expire_extend(key: str, extra_seconds: int) -> None:
+    """
+    Продлевает TTL (время жизни) ключа Redis на указанное количество секунд,
+    если у ключа уже есть положительный TTL.
+
+    Args:
+        key (str): Ключ Redis.
+        extra_seconds (int): Сколько секунд прибавить к текущему TTL.
+    """
+    ttl = redis_cache.ttl(key)
+    if ttl and ttl > 0:
+        redis_cache.expire(key, ttl + extra_seconds)
+
 
 def make_cache_key(
     session_id: str, 

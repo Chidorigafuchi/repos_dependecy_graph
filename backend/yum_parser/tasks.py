@@ -1,15 +1,16 @@
 from celery import shared_task
-import subprocess
 from pickle import loads
 from zlib import decompress
 from collections import defaultdict
 from typing import Dict
 
 from .models import Tracked_package
+
 from .services.graph import get_package_graph
 from .services.package_tracking import save_package_snapshot
 from .services.parser import repos_union
 from repos_dependency_graph.services.redis import redis_get
+from .services.parser import parse_repos
 
 
 @shared_task
@@ -72,13 +73,5 @@ def update_tracked_packages() -> Dict[str, int]:
     return result
 
 @shared_task
-def run_parse_packages_command() -> None:
-    """
-    Запускает команду `parse_packages` через subprocess.
-
-    Используется для асинхронного вызова задачи парсинга пакетов из Celery.
-
-    Returns:
-        None
-    """
-    subprocess.run(["python", "manage.py", "parse_packages"], check=True)
+def parse_repos_task(unloaded_repos=None):
+    parse_repos(unloaded_repos)

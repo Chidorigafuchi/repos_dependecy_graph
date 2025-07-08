@@ -68,6 +68,7 @@ def get_package_graph_with_cache(
 
     return packages_graph
 
+
 def get_package_graph(
         pkg_name: str, 
         repos: List[str], 
@@ -90,7 +91,7 @@ def get_package_graph(
     if not repos_packages:
         repos_packages = repos_union(repos)
 
-    if (not repos_packages.get(pkg_name)):
+    if not repos_packages.get(pkg_name):
         return packages_graph
                 
     parent_packages = []
@@ -130,6 +131,7 @@ def get_package_graph(
 
     return packages_graph
 
+
 def get_package_neighbours(
     repos_packages: Dict[str, PackageDependencies],
     current_package: str, 
@@ -163,6 +165,7 @@ def get_package_neighbours(
     )
 
     return neighbours, packages_graph
+
 
 def find_package_neighbours(
     repos_packages: Dict[str, PackageDependencies],
@@ -228,6 +231,7 @@ def find_package_neighbours(
                     packages_graph.library_package[current_package] = [dependency]
 
     return neighbours, packages_graph
+
 
 def add_dependence(
     main_packages: List[str], 
