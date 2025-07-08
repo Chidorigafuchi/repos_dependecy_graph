@@ -24,8 +24,8 @@
 1. Клонируйте репозиторий или распакуйте архив:
 
    ```bash
-   git clone https://github.com/Chidorigafuchi/repos_dependecy_graph.git
-   cd repos_dependecy_graph
+   git clone https://github.com/Chidorigafuchi/repos_dependency_graph.git
+   cd repos_dependency_graph
    ```
 2. Перед запуском необходимо создать .env файл в папке backend по примеру .env.example:
 

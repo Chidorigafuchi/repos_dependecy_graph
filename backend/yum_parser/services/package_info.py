@@ -1,9 +1,12 @@
 from typing import Dict, List, Union, Optional
 from pickle import dumps, loads
 from zlib import decompress
-from .parser import PackageInfo
+import logging
 
-from repos_dependency_graph.services.redis import redis_cache, make_cache_key
+from .parser import PackageInfo
+from repos_dependency_graph.services.redis import redis_set, redis_get, make_cache_key
+
+logger = logging.getLogger(__name__)
 
 
 def get_package_info_with_cache(session_key: str, package_name: str) -> Dict[str, Union[str, List[str]]]:
@@ -21,14 +24,14 @@ def get_package_info_with_cache(session_key: str, package_name: str) -> Dict[str
         Dict[str, Union[str, List[str]]]: Словарь с информацией о пакете.
     """
     redis_key = make_cache_key(session_key, package_name, [], 'info:')
-    saved_packages_info = redis_cache.get(redis_key)
+    saved_packages_info = redis_get(redis_key)
 
     if saved_packages_info:
         return loads(saved_packages_info)
     
     package_info = get_package_info(package_name).__dict__
- 
-    redis_cache.set(redis_key, dumps(package_info), ex=60 * 1)
+
+    redis_set(redis_key, dumps(package_info), ex=60 * 1)
 
     return package_info
 
@@ -42,11 +45,12 @@ def get_package_info(package_name: str) -> Optional[PackageInfo]:
     Returns:
         PackageInfo: Дата-класс с информацией о пакете, либо None, если пакет не найден.
     """
-    compressed_data = redis_cache.get('repos_info:compressed')
+    compressed_data = redis_get('repos_info:compressed')
+    package_info = {}
     
-    if not decompressed_data:
-        return None
-
+    if not compressed_data:
+        return package_info
+    
     decompressed_data = decompress(compressed_data)
     cached_packages_info = loads(decompressed_data)
 

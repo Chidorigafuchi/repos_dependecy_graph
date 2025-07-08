@@ -1,9 +1,12 @@
 from pickle import dumps, loads
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
+import logging
 
-from repos_dependency_graph.services.redis import redis_cache, make_cache_key
+from repos_dependency_graph.services.redis import redis_get, redis_set, make_cache_key
 from .parser import repos_union, get_names, PackageDependencies
+
+logger = logging.getLogger(__name__)
 
 MIN_DEPENDENCIES_TO_SET = 5
 MAX_NEIGHBOURS = 100
@@ -33,6 +36,7 @@ class PackageGraph:
     library_package: Dict[str, List[str]] = field(default_factory=dict)
     sets: Dict[str, List[str]] = field(default_factory=dict)
 
+
 def get_package_graph_with_cache(
         session_key: str, 
         pkg_name: str, 
@@ -53,14 +57,14 @@ def get_package_graph_with_cache(
         PackageGraph: Граф зависимостей пакета.
     """
     redis_key = make_cache_key(session_key, pkg_name, repos, 'graph:')
-    saved_packages_graph = redis_cache.get(redis_key)
+    saved_packages_graph = redis_get(redis_key)
 
     if saved_packages_graph:
         return loads(saved_packages_graph)
 
-    packages_graph = get_package_graph(pkg_name, repos)
+    packages_graph = get_package_graph(pkg_name, repos).__dict__
 
-    redis_cache.set(redis_key, dumps(packages_graph), ex=60 * 5)
+    redis_set(redis_key, dumps(packages_graph), ex=10)
 
     return packages_graph
 

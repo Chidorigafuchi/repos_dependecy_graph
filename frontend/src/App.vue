@@ -3,14 +3,18 @@ import RepoSelector from './components/RepoSelector.vue';
 import GraphRenderer from './components/GraphRenderer.vue';
 import NodeModal from './components/NodeElements.vue';
 
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import axios from 'axios';
 
 const packageName = ref('');
 const selectedRepos = ref([]);
-const repositories = ["os", "updates", "debuginfo", "kernel-rt", "kernel-testing"];
-const message = ref('');
 
+const repoSource = {
+  "https://repo1.red-soft.ru/redos/8.0/x86_64/": ["os", "updates", "debuginfo", "kernel-rt", "kernel-testing"],
+  "https://repo1.red-soft.ru/redos/7.3/x86_64/": ["test", "test2"]
+};
+
+const message = ref('');
 const graphData = ref({});
 
 const selectedNodeId = ref(null);
@@ -19,6 +23,18 @@ const selectedNodeItems = ref([]);
 const filterText = ref('');
 
 const isLoading = ref(false);
+
+const repositories = computed(() =>
+  Object.entries(repoSource).map(([base_url, names]) => ({
+    base_url,
+    repos: names.map(name => ({
+      name,
+      full: `${base_url}${name}/`,
+      base_url,
+    }))
+  }))
+);
+
 
 const fetchGraph = async () => {
   if (!packageName.value || selectedRepos.value.length === 0) return;
@@ -29,7 +45,7 @@ const fetchGraph = async () => {
   try {
     const response = await axios.post('http://localhost:8000/api/package/', {
       name: packageName.value,
-      repos: selectedRepos.value,
+      repos: getRepoList()
     });
     graphData.value = response.data;
   } 
@@ -43,32 +59,34 @@ const fetchGraph = async () => {
 
 const trackPackage = async () => {
   if (!packageName.value || selectedRepos.value.length === 0) return;
-  
+
   isLoading.value = true;
 
   try {
     const response = await axios.post('http://localhost:8000/api/track_package/', {
       name: packageName.value,
-      repos: selectedRepos.value,
-    }, 
-    {
+      repos: getRepoList()
+    }, {
       withCredentials: true
-    })
+    });
 
     if (response.data.track_created === true) {
-      message.value = `Пакет "${packageName.value}" добавлен в отслеживание.`
+      message.value = `Пакет "${packageName.value}" добавлен в отслеживание.`;
     } 
     else if (response.data.track_created === false) {
-      message.value = `Пакет "${packageName.value}" уже отслеживается.`
-    }
+      message.value = `Пакет "${packageName.value}" уже отслеживается.`;
+    } 
+    else if (response.data.track_created === 'unknown') {
+      message.value = `Ни один из репозиториев не найден`;
+    } 
     else {
-      message.value = 'Неожиданный ответ от сервера.'
+      message.value = 'Неожиданный ответ от сервера.';
     }
   } 
   catch (error) {
-    console.error('Ошибка при отслеживании пакета:', error)
-    message.value = 'Ошибка при добавлении пакета в отслеживание.'
-  }
+    console.error('Ошибка при отслеживании пакета:', error);
+    message.value = 'Ошибка при добавлении пакета в отслеживание.';
+  } 
   finally {
     isLoading.value = false;
   }
@@ -77,7 +95,7 @@ const trackPackage = async () => {
 const onNodeClicked = ({ nodeId, nodeType, items }) => {
   selectedNodeId.value = nodeId;
   selectedNodeType.value = nodeType;
-  selectedNodeItems.value = items || []
+  selectedNodeItems.value = items || [];
 };
 
 const closeModal = () => {
@@ -90,6 +108,10 @@ const closeModal = () => {
 const onGoToPackage = (newPackageName) => {
   packageName.value = newPackageName;
   fetchGraph();
+};
+
+const getRepoList = () => {
+  return selectedRepos.value.map(repo => `${repo.base_url}${repo.name}/`);
 };
 </script>
 

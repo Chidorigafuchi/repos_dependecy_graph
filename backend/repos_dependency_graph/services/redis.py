@@ -3,6 +3,10 @@ import redis
 from json import dumps
 from hashlib import md5
 from typing import List
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 redis_cache = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
@@ -10,11 +14,50 @@ redis_cache = redis.Redis(
     db=int(os.getenv("REDIS_DB", 0))
 )
 
+def redis_get(key: str):
+    """
+    Безопасно получает значение из Redis по заданному ключу.
+
+    Если при получении значения возникает ошибка Redis, она логируется и возвращается None.
+
+    Args:
+        key (str): Ключ, по которому нужно получить значение из Redis.
+
+    Returns:
+        Optional[bytes]: Значение, полученное из Redis (в виде bytes), или None при ошибке.
+    """
+    try:
+        return redis_cache.get(key)
+    except redis.RedisError as e:
+        logger.warning(f"Ошибка Redis при получении ключа '{key}': {e}")
+        return None
+
+def redis_set(key: str, value, ex: int = None):
+    """
+    Безопасно устанавливает значение в Redis по заданному ключу.
+
+    Если при установке значения возникает ошибка Redis, она логируется и возвращается False.
+
+    Args:
+        key (str): Ключ, по которому сохранить значение.
+        value (Any): Значение, которое нужно сохранить (обычно bytes или str).
+        ex (Optional[int]): Время жизни ключа в секундах (TTL). По умолчанию — None (без истечения срока).
+
+    Returns:
+        bool: True, если установка прошла успешно, иначе False.
+    """
+    try:
+        redis_cache.set(key, value, ex=ex)
+        return True
+    except redis.RedisError as e:
+        logger.error(f"Ошибка Redis при установке ключа '{key}': {e}")
+        return False
+
 def make_cache_key(
     session_id: str, 
     pkg_name: str, 
     repos: List[str], 
-    extra: str
+    extra: str = ''
 ) -> str:
     """
     Формирует уникальный ключ для кэша Redis на основе параметров:
