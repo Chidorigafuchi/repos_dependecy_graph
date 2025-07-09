@@ -31,7 +31,7 @@ def get_package_info(package_name: str) -> Optional[PackageInfo]:
     decompressed_data = decompress(compressed_data)
     cached_packages_info = loads(decompressed_data)
 
-    package_info = cached_packages_info.get(package_name)
+    package_info = (cached_packages_info.get(package_name) or PackageInfo())
 
     return package_info
 

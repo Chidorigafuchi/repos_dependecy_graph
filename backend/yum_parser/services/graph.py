@@ -251,6 +251,9 @@ def add_dependence(
     Returns:
         PackageGraph: Обновлённый граф.
     """
+    if not main_packages or not dependent_packages:
+        return packages_graph
+
     if (len(main_packages) == 1):
         package_name = main_packages[0]
 

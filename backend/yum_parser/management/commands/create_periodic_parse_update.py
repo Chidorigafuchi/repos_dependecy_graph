@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django_celery_beat.models import IntervalSchedule
-from yum_parser.services.create_periodic_tasks import create_periodic_task
+from backend.yum_parser.utils.create_periodic_tasks import create_periodic_task
 
 class Command(BaseCommand):
     help = "Создает или обновляет переодические задачи на поиск новых версий пакетов, парсинг пакетов из репозиториев"

@@ -8,7 +8,7 @@ import logging
 
 from yum_parser.models import Repo_path
 from repos_dependency_graph.services.redis import redis_get, redis_set
-from .reparse_repos import reparse_repos, disable_reparse_repos
+from ..utils.reparse_repos import reparse_repos, disable_reparse_repos
 
 logger = logging.getLogger(__name__)
 
@@ -55,19 +55,16 @@ def parse_repos(unloaded_repos: List[str] = None) -> None:
             repos_paths = Repo_path.objects.all()
             repos_paths = [repo_url.get_full_url() for repo_url in repos_paths]
         except DatabaseError as e:
-            logger.error(f'Ошибка при получении путей репозиториев из базы данных: {e}')
+            logger.error(f'Ошибка при получении путей репозиториев из БД: {e}')
             reparse_repos()
             return
     
     unloaded_repos = []
 
     for repo_url in repos_paths:
-        logger.info(f'Обрабатываю репозиторий {repo_url}')
         try:
             repodata = createrepo_c.Metadata()
             repodata.locate_and_load_xml(repo_url)
-
-            logger.info(f'Успешно загрузил {repo_url}')
 
             packages_dependencies = {}
             packages_info = {}
@@ -76,8 +73,6 @@ def parse_repos(unloaded_repos: List[str] = None) -> None:
 
             for key in keys:
                 pkg = repodata.get(key)
-
-                logger.info(f'обрабатываю - {pkg.name}')
 
                 packages_dependencies[pkg.name] = PackageDependencies(
                     requires=pkg.requires,
@@ -104,17 +99,20 @@ def parse_repos(unloaded_repos: List[str] = None) -> None:
     
     if repos_packages_dependencies and repos_packages_info:
         cache_parsed_repos(reparsing, repos_packages_dependencies, repos_packages_info)
-
         logger.info('Успешно загрузили репозитории')
-        if unloaded_repos:
-            logger.info(f'Незагруженные репозитории: {unloaded_repos}')
-            reparse_repos(unloaded_repos)
-        else:
-            disable_reparse_repos()
-    else:
+
+    if len(unloaded_repos) == len(repos_paths):
         logger.error('Ошибка при загрузке репозиториев')
         reparse_repos()
-
+        return
+    elif unloaded_repos:
+        logger.info(f'Незагруженные репозитории: {unloaded_repos}')
+        reparse_repos(unloaded_repos)
+        return
+    else:
+        disable_reparse_repos()
+        return
+        
 
 def cache_parsed_repos(
         reparsing: bool, 

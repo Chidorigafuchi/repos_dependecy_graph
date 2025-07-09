@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from yum_parser.services.add_repo import add_repo_path
+from backend.yum_parser.utils.add_repo import add_repo_path
 
 
 class Command(BaseCommand):

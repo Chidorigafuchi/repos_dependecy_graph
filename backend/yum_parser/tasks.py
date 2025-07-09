@@ -1,8 +1,9 @@
 from celery import shared_task
+import subprocess
 from pickle import loads
 from zlib import decompress
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Optional, List
 
 from .models import Tracked_package
 
@@ -73,5 +74,18 @@ def update_tracked_packages() -> Dict[str, int]:
     return result
 
 @shared_task
-def parse_repos_task(unloaded_repos=None):
+def parse_repos_task(unloaded_repos: Optional[List[str]] = None) -> None:
+    """
+    Асинхронно запускает функцию `parse_repos` для парсинга метаданных репозиториев.
+
+    Используется Celery для выполнения задачи в фоне. При необходимости принимает список репозиториев, 
+    которые нужно дозагрузить.
+
+    Args:
+        unloaded_repos (Optional[List[str]]): Список путей к репозиториям, которые нужно дозагрузить повторно. 
+                                              Если не указан, будут загружены все из базы данных.
+
+    Returns:
+        None
+    """
     parse_repos(unloaded_repos)

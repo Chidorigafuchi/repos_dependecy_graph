@@ -1,11 +1,15 @@
 import json
 from typing import Dict, List
 from hashlib import sha1
+from django.db import DatabaseError
+import logging
 
 from .graph import get_package_graph, PackageGraph
 from .parser import PackageInfo
 from .package_info import get_package_info
 from ..models import Tracked_package, Tracked_package_repo, Repo_path, Package_nevra_info
+
+logger = logging.getLogger(__name__)
 
 
 def track_package(session_key: str, package_name: str, repos: List[str]) -> Dict[str, bool]:
@@ -28,7 +32,11 @@ def track_package(session_key: str, package_name: str, repos: List[str]) -> Dict
     """
     created_package = False
 
-    all_repo_paths = Repo_path.objects.select_related('base_url').all()
+    try:
+        all_repo_paths = Repo_path.objects.select_related('base_url').all()
+    except DatabaseError as e:
+        logger.error(f'Ошибка при получении путей репозиториев из БД: {e}')
+        return {'track_created': 'unknown'}
 
     matching_repo_paths = [
         repo for repo in all_repo_paths
@@ -43,20 +51,30 @@ def track_package(session_key: str, package_name: str, repos: List[str]) -> Dict
 
     repos_hash=sha1(json.dumps(sorted_repos).encode()).hexdigest()
 
-    new_tracked_package, created_package = Tracked_package.objects.get_or_create(
-        session_key=session_key,
-        name=package_name,
-        repos_hash=repos_hash
-    )
+    try:
+        new_tracked_package, created_package = Tracked_package.objects.get_or_create(
+            session_key=session_key,
+            name=package_name,
+            repos_hash=repos_hash
+        )
+    except DatabaseError as e:
+        logger.error(f'Ошибка при добавлении отслеживаемого пакета в БД: {e}')
+        return {'track_created': 'unknown'}
+
+    
         
     if not created_package:
         return {'track_created': created_package}
     
     for repo_path in sorted_matching_repo_paths:
-        new_tracked_package_repo, created_package_repo = Tracked_package_repo.objects.get_or_create(
-            tracked_package=new_tracked_package,
-            repo=repo_path,
-        )
+        try:
+            new_tracked_package_repo, created_package_repo = Tracked_package_repo.objects.get_or_create(
+                tracked_package=new_tracked_package,
+                repo=repo_path,
+            )
+        except DatabaseError as e:
+            logger.error(f'Ошибка при добавлении отслеживаемого пакета по репозиториям в БД: {e}')
+            return {'track_created': 'unknown'}
 
     graph = get_package_graph(package_name, repos)
     info = get_package_info(package_name)
@@ -85,14 +103,18 @@ def save_package_snapshot(
     Returns:
         bool: new_nevra — была ли создана новая запись `Package_nevra`
     """
-    package_nevra, new_nevra = Package_nevra_info.objects.get_or_create(
-        tracked_package=tracked_package,
-        nevra=info.nevra,
-        defaults={
-            'obsoletes': json.dumps(info.obsoletes),
-            'conflicts': json.dumps(info.conflicts),
-            'graph_json': json.dumps(graph.__dict__)
-        }
-    )
+    new_nevra = False
+    try:
+        package_nevra, new_nevra = Package_nevra_info.objects.get_or_create(
+            tracked_package=tracked_package,
+            nevra=info.nevra,
+            defaults={
+                'obsoletes': json.dumps(info.obsoletes),
+                'conflicts': json.dumps(info.conflicts),
+                'graph_json': json.dumps(graph.__dict__)
+            }
+        )
+    except DatabaseError as e:
+        logger.error(f'Ошибка при добавлении версии пакета в БД: {e}')
 
     return new_nevra
