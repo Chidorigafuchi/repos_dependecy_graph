@@ -3,6 +3,9 @@ from backend.yum_parser.utils.add_repo import add_repo_path
 
 
 class Command(BaseCommand):
+    """
+    Команда для добавления базовых репозиториев в модель при запуске контейнера
+    """
     help = "Add base repositories of Red OS"
 
     def handle(self, *args, **kwargs):

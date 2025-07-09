@@ -26,6 +26,8 @@ class PackageInfo:
     release: str = ""
     url: str = ""
 
+TTL_CACHE_REDIS = 60 * 60 * 25
+
 
 def parse_repos(unloaded_repos: List[str] = None) -> None:
     """
@@ -142,8 +144,8 @@ def cache_parsed_repos(
     compressed_dependencies = compress(dumps(repos_packages_dependencies))
     compressed_info = compress(dumps(repos_packages_info))
 
-    redis_set('repos_dependencies:compressed', compressed_dependencies, ex=60 * 60 * 25)
-    redis_set('repos_info:compressed', compressed_info, ex=60 * 60 * 25)
+    redis_set('repos_dependencies:compressed', compressed_dependencies, TTL_CACHE_REDIS)
+    redis_set('repos_info:compressed', compressed_info, TTL_CACHE_REDIS)
 
 
 def repos_union(repos: List[str]) -> Dict[str, PackageDependencies]:

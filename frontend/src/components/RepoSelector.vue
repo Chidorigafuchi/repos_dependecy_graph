@@ -8,7 +8,6 @@ const selected = defineModel('selectedRepos');
 
 <template>
   <div style="margin-bottom: 10px; max-width: 400px;">
-    <label class="label">Выберите репозитории:</label>
     <multiselect
       v-model="selected"
       :options="repositories"

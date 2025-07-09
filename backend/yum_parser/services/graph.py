@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 MIN_DEPENDENCIES_TO_SET = 5
 MAX_NEIGHBOURS = 100
+TTL_CACHE_GRAPH = 60 * 10
 
 @dataclass
 class PackageGraph:
@@ -64,7 +65,7 @@ def get_package_graph_with_cache(
 
     packages_graph = get_package_graph(pkg_name, repos).__dict__
 
-    redis_set(redis_key, dumps(packages_graph), ex=10)
+    redis_set(redis_key, dumps(packages_graph), TTL_CACHE_GRAPH)
 
     return packages_graph
 

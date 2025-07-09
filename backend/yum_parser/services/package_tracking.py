@@ -1,7 +1,8 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from hashlib import sha1
 from django.db import DatabaseError
+from collections import defaultdict
 import logging
 
 from .graph import get_package_graph, PackageGraph
@@ -61,8 +62,6 @@ def track_package(session_key: str, package_name: str, repos: List[str]) -> Dict
         logger.error(f'Ошибка при добавлении отслеживаемого пакета в БД: {e}')
         return {'track_created': 'unknown'}
 
-    
-        
     if not created_package:
         return {'track_created': created_package}
     
@@ -118,3 +117,28 @@ def save_package_snapshot(
         logger.error(f'Ошибка при добавлении версии пакета в БД: {e}')
 
     return new_nevra
+
+
+def get_tracked_packages() -> Dict[Tuple[str], List[Tracked_package]]:
+    """
+    Получить словарь отслеживаемых пакетов, сгруппированных по уникальным комбинациям репозиториев.
+
+    Return:
+        dict:
+            Tuple[str]: кортеж строк с полными URL репозиториев, 
+            List[Tracked_package]: список объектов Tracked_package, связанных с этими репозиториями.
+    """
+    repos_packages = defaultdict(list)
+
+    try:
+        tracked = Tracked_package.objects.all().order_by('repos_hash')
+    except DatabaseError as e:
+        logger.error(f'Ошибка при получении отслеживаемых из БД: {e}')
+        return {}
+    
+    for package in tracked:
+        repo_paths = [tp_repo.repo for tp_repo in package.tracked_package_repo_set.all()]
+        repos = tuple(repo.get_full_url() for repo in repo_paths)
+        repos_packages[repos].append(package)
+
+    return repos_packages

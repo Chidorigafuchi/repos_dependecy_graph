@@ -6,6 +6,8 @@ import logging
 from .parser import PackageInfo
 from repos_dependency_graph.services.redis import redis_set, redis_get, make_cache_key
 
+TTL_CACHE_INFO = 60 * 1
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +60,7 @@ def get_package_info_with_cache(session_key: str, package_name: str) -> Dict[str
     
     package_info = get_package_info(package_name).__dict__
 
-    redis_set(redis_key, dumps(package_info), ex=60 * 1)
+    redis_set(redis_key, dumps(package_info), TTL_CACHE_INFO)
 
     return package_info
 

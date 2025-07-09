@@ -6,8 +6,9 @@ const props = defineProps({
   nodeId: String,
   nodeItems: Array,
   nodeType: String,
+  selectedRepos: Array,
 });
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'goToPackage']);
 
 const filterText = ref('');
 const selectedPackage = ref(null);
@@ -78,6 +79,7 @@ function handleGoToPackage(packageId) {
       <PackagePopup
         v-if="selectedPackage && nodeType === 'set'"
         :package-id="selectedPackage"
+        :selected-repos="props.selectedRepos"
         @close="closePackagePopup"
         @goToPackage="handleGoToPackage"
         :style="popupStyle"

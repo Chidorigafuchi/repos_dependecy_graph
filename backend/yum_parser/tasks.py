@@ -1,14 +1,10 @@
 from celery import shared_task
-import subprocess
 from pickle import loads
 from zlib import decompress
-from collections import defaultdict
 from typing import Dict, Optional, List
 
-from .models import Tracked_package
-
 from .services.graph import get_package_graph
-from .services.package_tracking import save_package_snapshot
+from .services.package_tracking import save_package_snapshot, get_tracked_packages
 from .services.parser import repos_union
 from repos_dependency_graph.services.redis import redis_get
 from .services.parser import parse_repos
@@ -29,10 +25,7 @@ def update_tracked_packages() -> Dict[str, int]:
     Returns:
         Dict[str, int]: Словарь с ключом 'Обновленных пакетов' и числом обновлённых пакетов.
     """
-    tracked = Tracked_package.objects.all().order_by('repos_hash')
-
     updated = 0
-    repos_packages = defaultdict(list)
 
     compressed_info = redis_get('repos_info:compressed')
 
@@ -41,14 +34,10 @@ def update_tracked_packages() -> Dict[str, int]:
     
     decompressed_info = decompress(compressed_info)
     packages_info = loads(decompressed_info)
-    
-    for package in tracked:
-        repo_paths = [tp_repo.repo for tp_repo in package.tracked_package_repo_set.all()]
-        repos = tuple(repo.get_full_url() for repo in repo_paths)
-        repos_packages[repos].append(package)
             
+    repos_packages = get_tracked_packages()
+
     for repos_list in repos_packages.keys():
-        print(repos_list)
         group_repos_packages = repos_union(repos_list)
 
         for package in repos_packages[repos_list]:
@@ -64,10 +53,7 @@ def update_tracked_packages() -> Dict[str, int]:
             )
 
             if new_nevra:
-                print(f'Обновил пакет - {package_name}')
                 updated += 1
-
-    print(f"Обновили {updated} пакетов из {tracked.count()} отслеживаемых.")
 
     result = {'Обновленных пакетов': updated}
 
