@@ -24,8 +24,8 @@
 1. Клонируйте репозиторий или распакуйте архив:
 
    ```bash
-   git clone https://github.com/Chidorigafuchi/repos_dependecy_graph.git
-   cd repos_dependecy_graph
+   git clone https://github.com/Chidorigafuchi/repos_dependency_graph.git
+   cd repos_dependency_graph
    ```
 2. Перед запуском необходимо создать .env файл в папке backend по примеру .env.example:
 
@@ -33,6 +33,11 @@
    DJANGO_SECRET_KEY=your-secret-key
    DEBUG=True
    ALLOWED_HOSTS=localhost,127.0.0.1
+   REDIS_HOST=redis
+   REDIS_PORT=6379
+   REDIS_DB=0
+   CELERY_BROKER_URL=redis://redis:6379/1
+   CELERY_RESULT_BACKEND=redis://redis:6379/2
    ```
 3. Постройте и запустите контейнеры:
 
@@ -44,21 +49,25 @@
 
 ## Эндпоинты
 
-| Метод | URL                            | Описание |
-|:-----:|--------------------------------|-------------------------------------------------------------------|
-|  POST | `/api/package/`                 | Получение графа зависимостей для пакета по выбранным репозиториям |
-| GET   | `/api/package_info/?author=Имя` | Получение информации о пакете по имени                  |
-
+| Метод  | URL                             | Описание |
+|:------:|---------------------------------|-------------------------------------------------------------------|
+| GET    | `/api/available_repos/`                   | Получение списка доступных репозиториев           |
+| GET    | `/api/package_info/?name=Имя`   | Получение информации о пакете по имени                  |
+| GET    | `/api/tracked_packages_list/`   | Получение списка отслеживаемых пакетов для пользователя           |
+| POST   | `/api/package/`                 | Получение графа зависимостей для пакета по выбранным репозиториям |
+| POST   | `/api/track_package/`           | Добавление пакета в список отслеживаемых          |
+| DELETE | `/api/tracked_packages_list/`   | Удаление пакета из списка отслеживаемых          |
 ---
 
-## Пример POST-запроса
 
-**POST** `/books/`
+## Пример POST-запросов
+
+**POST** `/api/package/`
 
 ```json
 {
   "name": "groonga",
-  "repos": ["os", "updates"],
+  "repos": ["https://repo1.red-soft.ru/redos/8.0/x86_64/os/", "https://repo1.red-soft.ru/redos/8.0/x86_64/updates/"],
 }
 ```
 ### Ответ
@@ -82,5 +91,20 @@
   "sets": {
         "SET_glibc-langpack": ["glibc-langpack-ar", "glibc-langpack-kw"]
     }
+}
+```
+
+**POST** `/api/track_package/`
+
+```json
+{
+  "name": "groonga",
+  "repos": ["https://repo1.red-soft.ru/redos/8.0/x86_64/os/"]
+}
+```
+### Ответ
+```json
+{
+  "track_created": "true"
 }
 ```

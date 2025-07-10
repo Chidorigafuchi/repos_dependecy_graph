@@ -7,11 +7,14 @@ const selected = defineModel('selectedRepos');
 </script>
 
 <template>
-  <div style="margin-bottom: 10px; max-width: 300px;">
-    <label class="label">Выберите репозитории:</label>
+  <div style="margin-bottom: 10px; max-width: 400px;">
     <multiselect
       v-model="selected"
       :options="repositories"
+      :group-label="'base_url'"
+      :group-values="'repos'"
+      :label="'name'"
+      :track-by="'full'"
       :multiple="true"
       :close-on-select="false"
       :clear-on-select="false"

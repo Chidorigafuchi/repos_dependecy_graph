@@ -7,9 +7,13 @@ import { buildGraph } from '@/utils/graphBuilder';
 const props = defineProps({
   graphData: Object,
   packageName: String,
+  selectedRepos: Array,
+  nodeId: String,
+  isLoading: Boolean, 
 });
 
-const emit = defineEmits(['node-clicked']);
+const emit = defineEmits(['node-clicked', 'goToPackage']);
+
 const network = ref(null);
 const container = ref(null);
 
@@ -27,6 +31,12 @@ watch(
   },
   { deep: true }
 );
+
+watch(() => props.nodeId, () => {
+  if (!props.nodeId) {
+    popupVisible.value = false;
+  }
+});
 
 const drawGraph = (data, target) => {
   const { nodes, edges } = buildGraph(data, target);
@@ -65,12 +75,15 @@ const drawGraph = (data, target) => {
 };
 
 const handleNodeClick = (params, data) => {
+  if (props.isLoading) return;
+  
   const nodeId = params.nodes[0];
   if (!nodeId) return;
 
   if (lastClickedNodeId.value !== nodeId) {
     lastClickedNodeId.value = nodeId;
     popupVisible.value = false;
+    currentNodeId.value = null;
     return;
   }
 
@@ -112,6 +125,7 @@ const closePopup = () => {
       v-if="popupVisible"
       :package-id="currentNodeId"
       :packageName="props.packageName"
+      :selected-repos="props.selectedRepos"
       :style="{
         position: 'absolute',
         top: popupTop + 'px',

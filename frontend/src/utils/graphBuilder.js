@@ -1,10 +1,19 @@
-// src/utils/graphBuilder.js
+
 export function buildGraph(data, target) {
   const nodes = new Map();
   const edges = [];
   const visitedUp = new Set();
   const visitedDown = new Set();
   const addedLibs = new Set();
+
+  const hasData =
+    (data.package_package && Object.keys(data.package_package).length > 0) ||
+    (data.set_package && Object.keys(data.set_package).length > 0) ||
+    (data.library_package && Object.keys(data.library_package).length > 0);
+
+  if (!hasData) {
+    return { nodes: [], edges: [] };
+  }
 
   const addNode = (id, level, shape = 'dot', color = null, label = null) => {
     if (!nodes.has(id)) {

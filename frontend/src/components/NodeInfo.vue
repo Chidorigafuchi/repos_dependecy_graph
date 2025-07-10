@@ -1,38 +1,32 @@
 <script setup>
 import { ref, watch } from 'vue';
-import axios from 'axios';
+import { fetchPackageInfoApi } from '../utils/requestApi';
+import TrackPackage from './TrackPackage.vue';
 
 const props = defineProps({
   packageId: String,
+  selectedRepos: Array,
 });
 const emit = defineEmits(['close', 'goToPackage']);
 
 const packageInfo = ref(null);
-const error = ref(null);
 
 watch(
   () => props.packageId,
   async (newId) => {
     if (!newId) return;
 
-    error.value = null;
     packageInfo.value = null;
 
-    try {
-      const response = await axios.get('http://localhost:8000/api/package_info/', {
-      params: { name: newId }
-    });
-    if (!newId) error.value = 'Ошибка при загрузке информации о пакете';
-    packageInfo.value = response.data;
-    } catch (err) {
-      error.value = 'Ошибка при загрузке информации о пакете';
-    }
+    const data = await fetchPackageInfoApi(newId);    
+    packageInfo.value = data;
   },
   { immediate: true }
 );
 
 const goToPackage = () => {
   emit('goToPackage', props.packageId);
+  emit('close');
 };
 </script>
 
@@ -42,25 +36,35 @@ const goToPackage = () => {
       <h3>Пакет: {{ packageId }}</h3>
       <button @click="$emit('close')" class="close-btn">×</button>
     </div>
+    
+    <div v-if="packageInfo">
+      <TrackPackage
+        :package-name="packageId"
+        :selected-repos="selectedRepos"
+        :disabled="false"
+      />
 
-    <div v-if="error">{{ error }}</div>
-    <div v-else-if="packageInfo">
       <p><strong>Version:</strong> {{ packageInfo.version }}</p>
       <p><strong>Release:</strong> {{ packageInfo.release }}</p>
+
       <p><strong>Url:</strong> 
         <a :href="packageInfo.url" target="_blank" rel="noopener noreferrer">
             {{ packageInfo.url }}
         </a>
       </p>
+
       <p><strong>NEVRA:</strong> {{ packageInfo.nevra }}</p>
+
       <p><strong>Conflicts:</strong></p>
       <ul>
         <li v-for="(item, index) in packageInfo.conflicts" :key="index">{{ item }}</li>
       </ul>
+
       <p><strong>Obsoletes:</strong></p>
       <ul>
         <li v-for="(item, index) in packageInfo.obsoletes" :key="index">{{ item }}</li>
       </ul>
+      
       <button class="go-btn" @click="goToPackage" v-if="packageInfo && props.packageId">
       Перейти
       </button>
