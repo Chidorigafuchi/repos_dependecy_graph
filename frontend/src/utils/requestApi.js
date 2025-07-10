@@ -2,6 +2,16 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+export async function getAvailabelRepos() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/available_repos/`);
+    return response.data
+  }
+  catch (error){
+    return []
+  }
+}
+
 export async function fetchGraphApi(packageName, repoList) {
   if (!packageName || repoList.length === 0) return null;
 

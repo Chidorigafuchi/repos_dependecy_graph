@@ -1,16 +1,24 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from pickle import loads
 
 from .services.graph import get_package_graph_with_cache
 from .services.package_info import get_package_info_with_cache
 from .services.package_tracking import track_package
 from .services.tracked_packages import get_tracked_packages_list, delete_tracked_package_from_db
+from repos_dependency_graph.services.redis import redis_get
 
 
 def get_or_create_session_key(request):
     if not request.session.session_key:
         request.session.create()
     return request.session.session_key
+
+class AvailableReposView(APIView):
+    def get(self, request):
+        available_repos = loads(redis_get('available_repos'))
+
+        return Response(available_repos)
 
 class PackageView(APIView):
     def post(self, request):

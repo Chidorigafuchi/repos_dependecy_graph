@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { trackPackageApi } from '../utils/request_api';
+import { trackPackageApi } from '../utils/requestApi';
 
 const props = defineProps({
   packageName: String,

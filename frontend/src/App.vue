@@ -3,18 +3,15 @@ import RepoSelector from './components/RepoSelector.vue';
 import GraphRenderer from './components/GraphRenderer.vue';
 import NodeModal from './components/NodeElements.vue';
 import TrackedList from './components/TrackedList.vue';
-import { fetchTrackedPackagesApi } from './utils/request_api';
+import { fetchTrackedPackagesApi, getAvailabelRepos } from './utils/requestApi';
+import { transformRepoList, fetchGraph, showGraphFromTracked } from './utils/graphFetch';
 
-import { fetchGraphApi } from './utils/request_api';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const packageName = ref('');
 const selectedRepos = ref([]);
 
-const repoSource = {
-  "https://repo1.red-soft.ru/redos/8.0/x86_64/": ["os", "updates", "debuginfo", "kernel-rt", "kernel-testing"],
-  "https://repo1.red-soft.ru/redos/7.3/x86_64/": ["test", "test2"]
-};
+const repoSource = ref({});
 const isLoading = ref(false);
 const message = ref('');
 const graphData = ref({});
@@ -28,11 +25,13 @@ const trackedPackages = ref([]);
 const showTrackedList = ref(false);
 
 onMounted(async () => {
+  const reposList = await getAvailabelRepos(); 
+  repoSource.value = transformRepoList(reposList);
   trackedPackages.value = await fetchTrackedPackagesApi();
 });
 
 const repositories = computed(() =>
-  Object.entries(repoSource).map(([base_url, names]) => ({
+  Object.entries(repoSource.value).map(([base_url, names]) => ({
     base_url,
     repos: names.map(name => ({
       name,
@@ -50,41 +49,32 @@ const getRepoList = computed(() => {
 });
 
 
-const fetchGraph = async () => {
-  if (!packageName.value || getRepoList.value.length === 0) return;
-
+const fetchGraphHandler = async () => {
   closeModal();
 
-  message.value = '';
-  isLoading.value = true;
+  const data = await fetchGraph({
+    packageName: packageName.value,
+    selectedRepos: getRepoList.value,
+    setMessage: msg => message.value = msg,
+    setIsLoading: val => isLoading.value = val,
+  });
 
-  const data = await fetchGraphApi(packageName.value, getRepoList.value);
-  graphData.value = data;
-  isLoading.value = false;
+  if (data) {
+    graphData.value = data;
+  }
 };
 
-const showGraphFromTracked = async ({ pkg, repos }) => {
-  packageName.value = pkg;
-  selectedRepos.value = repos.map(r => {
-    if (typeof r === 'string') {
-      for (const [baseUrl, repoNames] of Object.entries(repoSource)) {
-        if (r.startsWith(baseUrl)) {
-          const repoName = r.slice(baseUrl.length).replace(/\/$/, '');
-          if (repoNames.includes(repoName)) {
-            return {
-              name: repoName,
-              full: r,
-              base_url: baseUrl,
-            };
-          }
-        }
-      }
-      return null;
-    }
-    return r;
-  }).filter(Boolean);
+const showGraphFromTrackedHandler = async ({ pkg, repos }) => {
   showTrackedList.value = false;
-  await fetchGraph();
+
+  await showGraphFromTracked({
+    pkg,
+    repos,
+    repoSource: repoSource.value,
+    setPackageName: val => packageName.value = val,
+    setSelectedRepos: val => selectedRepos.value = val,
+    fetchGraph: fetchGraphHandler,
+  });
 };
 
 const onNodeClicked = ({ nodeId, nodeType, items }) => {
@@ -110,7 +100,7 @@ const closeTrackedList = () => {
 
 const onGoToPackage = (newPackageName) => {
   packageName.value = newPackageName;
-  fetchGraph();
+  fetchGraphHandler();
 };
 </script>
 
@@ -124,7 +114,7 @@ const onGoToPackage = (newPackageName) => {
       v-if="showTrackedList" 
       :tracked-packages="trackedPackages"
       :onClose="closeTrackedList"
-      @show-graph="showGraphFromTracked"
+      @show-graph="showGraphFromTrackedHandler"
       />
 
     <repo-selector v-model:selectedRepos="selectedRepos" :repositories="repositories" />
@@ -132,9 +122,9 @@ const onGoToPackage = (newPackageName) => {
     <input
       v-model="packageName"
       placeholder="Введите имя пакета"
-      @keyup.enter="fetchGraph"
+      @keyup.enter="fetchGraphHandler"
     />
-    <button :disabled="isLoading || !packageName || selectedRepos.length === 0" @click="fetchGraph">
+    <button :disabled="isLoading || !packageName || selectedRepos.length === 0" @click="fetchGraphHandler">
       Показать граф
     </button>
     

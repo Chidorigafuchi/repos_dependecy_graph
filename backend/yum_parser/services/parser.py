@@ -100,7 +100,12 @@ def parse_repos(unloaded_repos: List[str] = None) -> None:
         repos_packages_info.update(packages_info)
     
     if repos_packages_dependencies and repos_packages_info:
-        cache_parsed_repos(reparsing, repos_packages_dependencies, repos_packages_info)
+        cache_parsed_repos(
+            reparsing, 
+            repos_packages_dependencies, 
+            repos_packages_info, 
+            repos_paths
+        )
         logger.info('Успешно загрузили репозитории')
 
     if len(unloaded_repos) == len(repos_paths):
@@ -119,7 +124,8 @@ def parse_repos(unloaded_repos: List[str] = None) -> None:
 def cache_parsed_repos(
         reparsing: bool, 
         repos_packages_dependencies: Dict[str, Dict[str, PackageDependencies]], 
-        repos_packages_info: Dict[str, PackageInfo]
+        repos_packages_info: Dict[str, PackageInfo],
+        available_repos:  List[str]
     ) -> None:
     """
     Обновляет и сохраняет в Redis зависимости и информацию о пакетах.
@@ -130,6 +136,7 @@ def cache_parsed_repos(
         reparsing (bool): Флаг, указывающий, является ли это повторной попыткой парсинга.
         repos_packages_dependencies (Dict[str, Dict[str, PackageDependencies]): Зависимости пакетов по каждому репозиторию.
         repos_packages_info (Dict[str, PackageInfo]): Общая информация о пакетах.
+        available_repos (List[str]): Список репозиториев, которые доступны для построения графа
 
     Returns:
         None
@@ -137,15 +144,19 @@ def cache_parsed_repos(
     if reparsing:
         cached_dependencies =loads(decompress(redis_get('repos_dependencies:compressed')))
         cached_info = loads(decompress(redis_get('repos_info:compressed')))
+        cached_available_repos = loads(redis_get('available_repos'))
         
         repos_packages_dependencies.update(cached_dependencies)
         repos_packages_info.update(cached_info)
+        available_repos = cached_available_repos + available_repos
 
     compressed_dependencies = compress(dumps(repos_packages_dependencies))
     compressed_info = compress(dumps(repos_packages_info))
+    dumped_available_repos = dumps(available_repos)
 
     redis_set('repos_dependencies:compressed', compressed_dependencies, TTL_CACHE_REDIS)
     redis_set('repos_info:compressed', compressed_info, TTL_CACHE_REDIS)
+    redis_set('available_repos', dumped_available_repos, TTL_CACHE_REDIS)
 
 
 def repos_union(repos: List[str]) -> Dict[str, PackageDependencies]:

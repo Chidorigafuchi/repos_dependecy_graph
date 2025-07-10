@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, reactive, watch } from 'vue';
-import { deleteRepoGroupApi } from '../utils/request_api';
+import { deleteRepoGroupApi } from '../utils/requestApi';
 
 const props = defineProps({
   onClose: Function,

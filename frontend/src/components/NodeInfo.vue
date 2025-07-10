@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { fetchPackageInfoApi } from '../utils/request_api';
+import { fetchPackageInfoApi } from '../utils/requestApi';
 import TrackPackage from './TrackPackage.vue';
 
 const props = defineProps({
