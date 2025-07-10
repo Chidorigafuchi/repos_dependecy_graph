@@ -67,7 +67,6 @@ const fetchGraphHandler = async () => {
   if (data) {
     graphData.value = data;
   }
-  console.log(graphData.value.length)
 };
 
 const showGraphFromTrackedHandler = async ({ pkg, repos }) => {
@@ -145,7 +144,7 @@ const onGoToPackage = (newPackageName) => {
     <version-diff
       v-if="showVersionDiff"
       :package-name="packageName"
-      :repo-groups="trackedPackages[packageName]"
+      :repos="getRepoList"
     />
     
     <graph-renderer

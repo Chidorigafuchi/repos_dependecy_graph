@@ -1,26 +1,60 @@
 <script setup>
-import { ref } from 'vue';
-import { fetchVersionDiffApi } from '../utils/requestApi';
+import { ref, onMounted } from 'vue';
+import { fetchVersionDiffApi, fetchPackageVersionsApi } from '../utils/requestApi';
 
 const props = defineProps({
   packageName: String,
-  repoGroups: Array
+  repos: Array,
 });
 
-const selectedGroup = ref(null);
-const diffData = ref(null);
+const versionsData = ref(null); // Список доступных версий (или объект с NEVRA)
+const diffData = ref(null);     // Данные по разнице версий после выбора версии
 const loading = ref(false);
+const error = ref(null);
+const selectedVersion = ref(null);
 
-const loadVersionDiff = async (group) => {
-  if (!props.packageName || !group?.length) return;
-  selectedGroup.value = group;
-  diffData.value = null;
+onMounted(() => {
+  loadVersions();
+});
+
+const loadVersions = async () => {
+  if (!props.packageName || !props.repos?.length) {
+    return;
+  }
+
   loading.value = true;
+  error.value = null;
+  diffData.value = null;
+  selectedVersion.value = null;
+
   try {
-    diffData.value = await fetchVersionDiffApi(props.packageName, group);
-  } catch (e) {
-    console.error('Ошибка при получении различий:', e);
-  } finally {
+    versionsData.value = await fetchPackageVersionsApi(props.packageName, props.repos);
+  } 
+  catch (e) {
+    error.value = 'Ошибка при получении версий';
+    console.error(e);
+  } 
+  finally {
+    loading.value = false;
+  }
+};
+
+const loadDiff = async (version) => {
+  if (!version) return;
+
+  loading.value = true;
+  error.value = null;
+  diffData.value = null;
+  selectedVersion.value = version;
+
+  try {
+    diffData.value = await fetchVersionDiffApi(props.packageName, props.repos, version);
+  } 
+  catch (e) {
+    error.value = 'Ошибка при получении различий версий';
+    console.error(e);
+  } 
+  finally {
     loading.value = false;
   }
 };
@@ -30,26 +64,33 @@ const loadVersionDiff = async (group) => {
   <div class="version-diff">
     <p>Пакет: <strong>{{ packageName }}</strong></p>
 
-    <div v-if="!repoGroups?.length">
-      <p>Нет доступных групп репозиториев</p>
+    <div v-if="!repos || repos.length === 0">
+      <p>Нет выбранных репозиториев для сравнения</p>
     </div>
 
-    <ul v-else class="repo-group-list">
-      <li v-for="group in repoGroups" :key="group.join(',')" class="repo-group-item">
-        <button @click="loadVersionDiff(group)" class="repo-group-btn">
-          <span v-for="repo in group" :key="repo" class="repo">{{ repo }}</span>
-        </button>
-      </li>
-    </ul>
+    <div v-if="loading">🔄 Загрузка данных...</div>
+    <div v-if="error" style="color:red;">{{ error }}</div>
 
-    <div class="result">
-      <p v-if="loading">🔄 Загрузка различий версий...</p>
-      <div v-else-if="diffData">
-        <p>Сравнение версий:</p>
-        <pre>{{ JSON.stringify(diffData, null, 2) }}</pre>
-      </div>
-      <p v-else-if="selectedGroup">❗ Нет данных</p>
+    <div v-if="versionsData && !loading">
+      <p>Доступные версии:</p>
+      <ul>
+        <li v-for="version in versionsData" :key="version">
+          <button
+            :class="{ selected: selectedVersion === version }"
+            @click="loadDiff(version)"
+          >
+            {{ version }}
+          </button>
+        </li>
+      </ul>
     </div>
+
+    <div v-if="diffData && !loading">
+      <p>Сравнение версий для: <strong>{{ selectedVersion }}</strong></p>
+      <pre>{{ JSON.stringify(diffData, null, 2) }}</pre>
+    </div>
+
+    <p v-else-if="selectedVersion && !diffData && !loading">❗ Нет данных для выбранной версии</p>
   </div>
 </template>
 
@@ -63,41 +104,28 @@ const loadVersionDiff = async (group) => {
   font-family: sans-serif;
 }
 
-.repo-group-list {
+ul {
   list-style: none;
   padding: 0;
-  margin-top: 10px;
+  margin: 10px 0;
 }
 
-.repo-group-item {
-  margin-bottom: 8px;
-}
-
-.repo-group-btn {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background-color: #f0f0f0;
+button {
+  padding: 4px 8px;
+  margin: 2px;
+  border-radius: 4px;
+  border: 1px solid #aaa;
+  background: #eee;
   cursor: pointer;
 }
 
-.repo-group-btn:hover {
-  background-color: #e6f2ff;
+button.selected {
+  background-color: #4caf50;
+  color: white;
+  border-color: #3a8d3a;
 }
 
-.repo {
-  background-color: #e0e0e0;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.result {
-  margin-top: 16px;
-  font-family: monospace;
-  font-size: 14px;
+button:hover {
+  background-color: #d4edda;
 }
 </style>

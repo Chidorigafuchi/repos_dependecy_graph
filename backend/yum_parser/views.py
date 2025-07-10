@@ -6,6 +6,7 @@ from .services.graph import get_package_graph_with_cache
 from .services.package_info import get_package_info_with_cache
 from .services.package_tracking import track_package
 from .services.tracked_packages import get_tracked_packages_list, delete_tracked_package_from_db
+from .services.package_versions_diff import get_package_version_diff, get_package_versions
 from repos_dependency_graph.services.redis import redis_get
 
 
@@ -68,20 +69,22 @@ class TrackedPackagesListView(APIView):
         return Response(deleted)
     
 class VersionDiffView(APIView):
+    def get(self, request):
+        session_key = get_or_create_session_key(request)
+        pkg_name = request.query_params.get('name')
+        repos = request.query_params.getlist('repos[]')
+
+        result = get_package_versions(session_key, pkg_name, repos)
+
+        return Response(result)
+
     def post(self, request):
         session_key = get_or_create_session_key(request)
         pkg_name = request.data.get('name')
         repos = request.data.get('repos')
+        nevra = request.data.get('nevra')
 
-        result = {
-            'package_package': {
-                'groonga': ['aboba'],
-                'groonga-http': ['test1', 'test2']
-            },
-            'sets': {
-                'glibc_langpack': ['new']
-            },
-        }
+        result = get_package_version_diff(session_key, pkg_name, repos, nevra)
 
         return Response(result)
     

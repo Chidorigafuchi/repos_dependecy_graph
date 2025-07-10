@@ -88,13 +88,31 @@ export async function deleteRepoGroupApi(packageName, repoList) {
   }
 }
 
-export async function fetchVersionDiffApi(packageName, repoGroups) {
-  if (!packageName || !Array.isArray(repoGroups) || repoGroups.length === 0) return null;
+export async function fetchPackageVersionsApi(packageName, repos) {
+  if (!packageName || !Array.isArray(repos) || repos.length === 0) return null;
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/version_diff/`, {
+      params: {
+        name: packageName,
+        repos: repos
+      },
+      withCredentials: true
+    });
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function fetchVersionDiffApi(packageName, repos, nevra) {
+  if (!packageName || !nevra || !Array.isArray(repos) || repos.length === 0) return null;
 
   try {
     const response = await axios.post(`${API_BASE_URL}/api/version_diff/`, {
       name: packageName,
-      repos: repoGroups
+      repos: repos,
+      nevra: nevra
     }, 
     {
       withCredentials: true
