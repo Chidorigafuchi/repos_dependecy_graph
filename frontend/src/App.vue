@@ -3,6 +3,7 @@ import RepoSelector from './components/RepoSelector.vue';
 import GraphRenderer from './components/GraphRenderer.vue';
 import NodeModal from './components/NodeElements.vue';
 import TrackedList from './components/TrackedList.vue';
+import VersionDiff from './components/VersionDiff.vue';
 import { fetchTrackedPackagesApi, getAvailabelRepos } from './utils/requestApi';
 import { transformRepoList, fetchGraph, showGraphFromTracked } from './utils/graphFetch';
 
@@ -23,12 +24,17 @@ const filterText = ref('');
 
 const trackedPackages = ref([]);
 const showTrackedList = ref(false);
+const showVersionDiff = ref(false);
 
 onMounted(async () => {
   const reposList = await getAvailabelRepos(); 
   repoSource.value = transformRepoList(reposList);
   trackedPackages.value = await fetchTrackedPackagesApi();
 });
+
+const isTrackedPackageDisplayed = computed(() =>
+  packageName.value in trackedPackages.value
+);
 
 const repositories = computed(() =>
   Object.entries(repoSource.value).map(([base_url, names]) => ({
@@ -48,7 +54,6 @@ const getRepoList = computed(() => {
   });
 });
 
-
 const fetchGraphHandler = async () => {
   closeModal();
 
@@ -62,6 +67,7 @@ const fetchGraphHandler = async () => {
   if (data) {
     graphData.value = data;
   }
+  console.log(graphData.value.length)
 };
 
 const showGraphFromTrackedHandler = async ({ pkg, repos }) => {
@@ -127,6 +133,20 @@ const onGoToPackage = (newPackageName) => {
     <button :disabled="isLoading || !packageName || selectedRepos.length === 0" @click="fetchGraphHandler">
       Показать граф
     </button>
+
+    <button
+      v-if="Object.keys(graphData || {}).length > 0 && isTrackedPackageDisplayed"
+      class="diff-button"
+      @click="showVersionDiff = !showVersionDiff"
+    >
+      {{ showVersionDiff ? 'Скрыть сравнение версий' : 'Разница версий' }}
+    </button>
+
+    <version-diff
+      v-if="showVersionDiff"
+      :package-name="packageName"
+      :repo-groups="trackedPackages[packageName]"
+    />
     
     <graph-renderer
       :graph-data="graphData"
@@ -186,5 +206,19 @@ button {
 
 .watchlist-button:hover {
   background-color: #45a049;
+}
+
+.diff-button {
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 16px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.diff-button:hover {
+  background-color: #1976d2;
 }
 </style>

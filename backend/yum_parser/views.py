@@ -67,3 +67,21 @@ class TrackedPackagesListView(APIView):
 
         return Response(deleted)
     
+class VersionDiffView(APIView):
+    def post(self, request):
+        session_key = get_or_create_session_key(request)
+        pkg_name = request.data.get('name')
+        repos = request.data.get('repos')
+
+        result = {
+            'package_package': {
+                'groonga': ['aboba'],
+                'groonga-http': ['test1', 'test2']
+            },
+            'sets': {
+                'glibc_langpack': ['new']
+            },
+        }
+
+        return Response(result)
+    

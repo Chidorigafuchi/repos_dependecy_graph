@@ -84,7 +84,24 @@ export async function deleteRepoGroupApi(packageName, repoList) {
     return response.data;
   } 
   catch (error) {
-    console.error('Ошибка при удалении группы репозиториев:', error);
+    return null;
+  }
+}
+
+export async function fetchVersionDiffApi(packageName, repoGroups) {
+  if (!packageName || !Array.isArray(repoGroups) || repoGroups.length === 0) return null;
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/version_diff/`, {
+      name: packageName,
+      repos: repoGroups
+    }, 
+    {
+      withCredentials: true
+    });
+    return response.data;
+  } 
+  catch (error) {
     return null;
   }
 }

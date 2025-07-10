@@ -56,6 +56,7 @@
 | GET    | `/api/tracked_packages_list/`   | Получение списка отслеживаемых пакетов для пользователя           |
 | POST   | `/api/package/`                 | Получение графа зависимостей для пакета по выбранным репозиториям |
 | POST   | `/api/track_package/`           | Добавление пакета в список отслеживаемых          |
+| POST   | `/api/version_diff/`            | Получение графа разницы версий пакета |
 | DELETE | `/api/tracked_packages_list/`   | Удаление пакета из списка отслеживаемых          |
 ---
 
@@ -95,6 +96,21 @@
 ```
 
 **POST** `/api/track_package/`
+
+```json
+{
+  "name": "groonga",
+  "repos": ["https://repo1.red-soft.ru/redos/8.0/x86_64/os/"]
+}
+```
+### Ответ
+```json
+{
+  "track_created": "true"
+}
+```
+
+**POST** `/api/version_diff/`
 
 ```json
 {
