@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from .services.graph import get_package_graph_with_cache
 from .services.package_info import get_package_info_with_cache
 from .services.package_tracking import track_package
-from .services.tracked_packages import get_tracked_packages_list
+from .services.tracked_packages import get_tracked_packages_list, delete_tracked_package_from_db
 
 
 def get_or_create_session_key(request):
@@ -52,8 +52,10 @@ class TrackedPackagesListView(APIView):
     
     def delete(self, request):
         session_key = get_or_create_session_key(request)
+        pkg_name = request.data.get('package')
+        repos = request.data.get('repos')
 
-        deleted = True
+        deleted = delete_tracked_package_from_db(session_key, pkg_name, repos)
 
         return Response(deleted)
     
