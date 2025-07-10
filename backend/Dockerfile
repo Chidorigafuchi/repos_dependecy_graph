@@ -24,4 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/start_celery_beat.sh
+
+RUN mkdir -p /app/logs
