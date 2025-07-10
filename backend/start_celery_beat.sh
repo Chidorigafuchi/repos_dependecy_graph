@@ -2,9 +2,9 @@
 set -eu
 
 echo "Ожидание завершения миграций..."
-until python manage.py showmigrations repos_dependency_graph | grep '\[X\]' > /dev/null; do
+until python manage.py showmigrations yum_parser | grep '\[X\]' > /dev/null; do
   echo "Миграции ещё не завершены, ждём..."
-  sleep 2
+  sleep 20
 done
 
 echo "Миграции завершены, запускаем Celery Beat..."
