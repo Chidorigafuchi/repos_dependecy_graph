@@ -2,7 +2,7 @@ import os
 import redis
 from json import dumps
 from hashlib import md5
-from typing import List
+from typing import List, Any
 import logging
 
 
@@ -33,7 +33,7 @@ def redis_get(key: str):
         return None
 
 
-def redis_set(key: str, value, ex: int = None):
+def redis_set(key: str, value: Any, ex: int = None):
     """
     Безопасно устанавливает значение в Redis по заданному ключу.
 
@@ -93,5 +93,5 @@ def make_cache_key(
         'pkg_name': pkg_name,
         'repos': sorted(repos)
     })
-    
+
     return extra + md5(key_data.encode()).hexdigest()

@@ -26,6 +26,7 @@ def reparse_repos(unloaded_repos: List[str] = None) -> None:
         unloaded_repos = []
         redis_expire_extend('repos_dependencies:compressed', 60 * 5)
         redis_expire_extend('repos_info:compressed', 60 * 5)
+        redis_expire_extend('available_repos', 60 * 5)
         logger.info("Продлён TTL кэша repos_dependencies и repos_info на 5 минут")
 
     schedule, _ = IntervalSchedule.objects.get_or_create(

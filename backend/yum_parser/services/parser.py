@@ -1,6 +1,6 @@
 import createrepo_c
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 from pickle import dumps, loads
 from zlib import compress, decompress
 from django.db import DatabaseError
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class PackageDependencies:
-    requires: List[str] = field(default_factory=list)
-    provides: List[str] = field(default_factory=list)
+    requires: Set[str] = field(default_factory=set)
+    provides: Set[str] = field(default_factory=set)
 
 @dataclass
 class PackageInfo:
@@ -183,7 +183,15 @@ def repos_union(repos: List[str]) -> Dict[str, PackageDependencies]:
     repos_packages = loads(decompressed_data)
     for repo in repos:
         if repo in repos_packages:
-            packages.update(repos_packages[repo])
+            for pkg_name, pkg_deps in repos_packages[repo].items():
+                if pkg_name in packages:
+                    packages[pkg_name].requires |= pkg_deps.requires
+                    packages[pkg_name].provides |= pkg_deps.provides
+                else:
+                    packages[pkg_name] = PackageDependencies(
+                        requires=set(pkg_deps.requires),
+                        provides=set(pkg_deps.provides)
+                    )
 
     return packages
 

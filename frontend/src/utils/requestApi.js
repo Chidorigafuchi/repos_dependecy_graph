@@ -19,6 +19,9 @@ export async function fetchGraphApi(packageName, repoList) {
     const response = await axios.post(`${API_BASE_URL}/api/package/`, {
       name: packageName,
       repos: repoList
+    }, 
+    {
+      withCredentials: true
     });
     return response.data;
   } 
@@ -34,7 +37,8 @@ export async function trackPackageApi(packageName, repoList) {
     const response = await axios.post(`${API_BASE_URL}/api/track_package/`, {
       name: packageName,
       repos: repoList
-    }, {
+    }, 
+    {
       withCredentials: true
     });
     return response.data;
@@ -49,7 +53,8 @@ export async function fetchPackageInfoApi(packageId) {
 
   try {
     const response = await axios.get(`${API_BASE_URL}/api/package_info/`, {
-      params: { name: packageId }
+      params: { name: packageId }, 
+      withCredentials: true
     });
     return response.data;
   } 

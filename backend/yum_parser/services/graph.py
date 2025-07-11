@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 MIN_DEPENDENCIES_TO_SET = 5
 MAX_NEIGHBOURS = 100
-TTL_CACHE_GRAPH = 60 * 10
+# TTL_CACHE_GRAPH = 60 * 10
+TTL_CACHE_GRAPH = 1
 
 @dataclass
 class PackageGraph:
@@ -205,7 +206,7 @@ def find_package_neighbours(
             if dependency_name in dependencies:
                 dependencies_neighbours[dependency_name].append(package_name)
                 if package_name not in neighbours:
-                        neighbours.append(package_name)
+                    neighbours.append(package_name)
 
     for dependency in dependencies_neighbours.keys():
         found_neighbours = dependencies_neighbours[dependency]

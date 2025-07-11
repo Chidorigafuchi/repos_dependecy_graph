@@ -17,7 +17,15 @@ def get_or_create_session_key(request):
 
 class AvailableReposView(APIView):
     def get(self, request):
-        available_repos = loads(redis_get('available_repos'))
+        cached_repos = redis_get('available_repos')
+        
+        if cached_repos:
+            available_repos = loads(cached_repos)
+        else: 
+            from yum_parser.tasks import parse_repos_task
+            parse_repos_task.delay()
+            available_repos=[]
+            
 
         return Response(available_repos)
 

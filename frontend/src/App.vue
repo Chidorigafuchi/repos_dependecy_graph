@@ -7,7 +7,7 @@ import VersionDiff from './components/VersionDiff.vue';
 import { fetchTrackedPackagesApi, getAvailabelRepos } from './utils/requestApi';
 import { transformRepoList, fetchGraph, showGraphFromTracked } from './utils/graphFetch';
 
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 
 const packageName = ref('');
 const selectedRepos = ref([]);
@@ -26,10 +26,17 @@ const trackedPackages = ref([]);
 const showTrackedList = ref(false);
 const showVersionDiff = ref(false);
 
+
 onMounted(async () => {
   const reposList = await getAvailabelRepos(); 
   repoSource.value = transformRepoList(reposList);
   trackedPackages.value = await fetchTrackedPackagesApi();
+});
+
+watch(packageName, (newVal) => {
+  if (!(newVal in trackedPackages.value)) {
+    showVersionDiff.value = false;
+  }
 });
 
 const isTrackedPackageDisplayed = computed(() =>
@@ -53,6 +60,7 @@ const getRepoList = computed(() => {
     return `${repo.base_url}${repo.name}/`;
   });
 });
+
 
 const fetchGraphHandler = async () => {
   closeModal();
